@@ -9,11 +9,8 @@ import subprocess
 import glob
 
 ##TODO
-## ogarnij zapisywanie wyników, czas ruchu, foldery, zapisywanie ID eksperymentu, analizy posea
-
-##DO ROZKMINIENIA
-## rozkmin jak potencjalnie 3D z 2 kamer, traignularyzacja
-## kalibracja zamiast 3D? rozkmin kalibracje
+## ogarnij zapisywanie analizy posea
+## ogarnij kalibracje i miary ppsea
 
 ##DO OBGADANIA!
 ## od kiedy kazac im trzymac palec?
@@ -22,14 +19,11 @@ import glob
 ## ogarnij instrukcje 
 ## Wstaw śnieżki od Olgi
 
-
-
-
 ##### CONFIGURATION:
 #win_size = [2560, 1440] 
 #win_size = [1280, 1024]
 win_size = [800, 800] ##should be set accordingly to monitor resolution even when FULL_SIZE!!!
-full_size = False
+full_size = True
 show_circles = False
 show_trial_results = True
 do_inference_after = False
@@ -109,10 +103,39 @@ def model_inference3D(path_to_experiment):
 
 if __name__ == '__main__':
     experiment = Experiment(win_size = win_size, full_size = full_size, results_dir = results_dir)
-    experiment.upload_param(show_circles, circle_radius, small_circle_radius, obj_radius, n_targets, hz_target, hz_circle, instruction_1, instruction_2, instruction_2_MIT, fps,
-                random_direction_small_circles, random_direction_big_circle, random_offset_target_distractor, random_offset_circles, random_distractor_target_orientation,
-                observation_time,tracking_time, guessing_time, direction_changes,direction_changes_motoric, change_big_direction, show_trial_results, path_for_mit_icons, img_mode,
-                motoric_radius, motoric_circle_radius,  hz_motoric, answer_1_time_limit, answer_MIT_time_limit, motor_task_time_limit)
+    experiment.upload_param(
+    show_circles=show_circles, 
+    circle_radius=circle_radius, 
+    small_circle_radius=small_circle_radius, 
+    obj_radius=obj_radius, 
+    n_targets=n_targets, 
+    hz_target=hz_target, 
+    hz_circle=hz_circle, 
+    instruction_1=instruction_1, 
+    instruction_2=instruction_2, 
+    instruction_2_MIT=instruction_2_MIT, 
+    fps=fps, 
+    random_direction_small_circles=random_direction_small_circles, 
+    random_direction_big_circle=random_direction_big_circle, 
+    random_offset_target_distractor=random_offset_target_distractor, 
+    random_offset_circles=random_offset_circles, 
+    random_distractor_target_orientation=random_distractor_target_orientation, 
+    observation_time=observation_time, 
+    tracking_time=tracking_time, 
+    guessing_time=guessing_time, 
+    direction_changes=direction_changes, 
+    direction_changes_motoric=direction_changes_motoric, 
+    change_big_direction=change_big_direction, 
+    show_trial_results=show_trial_results, 
+    path_for_mit_icons=path_for_mit_icons, 
+    img_mode=img_mode, 
+    motoric_radius=motoric_radius, 
+    motoric_circle_radius=motoric_circle_radius, 
+    hz_motoric=hz_motoric, 
+    answer_1_time_limit=answer_1_time_limit, 
+    answer_MIT_time_limit=answer_MIT_time_limit, 
+    motor_task_time_limit=motor_task_time_limit
+)
     experiment.initialize_mot()
     experiment.initialize_mit()
 

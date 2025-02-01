@@ -18,8 +18,9 @@ class Trial():
     def __init__(self, win, show_circles, circle_radius, small_circle_radius, obj_radius, n_targets, hz_target, hz_circle, instruction_1, instruction_2, instruction_2_MIT, fps,
                 random_direction_small_circles, random_direction_big_circle, random_offset_target_distractor, random_offset_circles, random_distractor_target_orientation,
                 observation_time,tracking_time, guessing_time, direction_changes, direction_changes_motoric, change_big_direction, show_trial_results, path_for_mit_icons, img_mode, 
-                motoric_radius, motoric_circle_radius, hz_motoric, answer_1_time_limit, answer_MIT_time_limit, motor_task_time_limit, results_dir):
+                motoric_radius, motoric_circle_radius, hz_motoric, answer_1_time_limit, answer_MIT_time_limit, motor_task_time_limit, dir_name, df):
         self.win = win
+        self.df = df
         self.show_circles = show_circles
         self.circle_radius = circle_radius
         self.small_circle_radius = small_circle_radius
@@ -52,7 +53,7 @@ class Trial():
         self.frame_duration = 1.0 / fps  # Duration of each frame in seconds
         self.img_mode = img_mode
         self.path_for_mit_icons = path_for_mit_icons
-        self.results_dir = results_dir
+        self.dir_name = dir_name
 
         self.motoric_radius = motoric_radius
         self.motoric_circle_radius = motoric_circle_radius
@@ -203,7 +204,15 @@ class Trial():
     def motoric_task(self):
         objectibe_circle = visual.Circle(self.win, radius=self.motoric_circle_radius, lineColor="white", fillColor=None, pos=(0,0))
         objective = visual.Circle(self.win, radius=self.motoric_radius, fillColor="black", pos=None)
-
+        task_data = {'TargetX': None,
+                    'TargetY': None,
+                    'ClickX': None,
+                    'ClickY': None,
+                    'Norm_Euc_Dist': None,
+                    'Task_time': None,
+                    'Movement_start': None,
+                    'Movement_duration': None,
+                    }
         # Define the cross using ShapeStim
         cross = [visual.ShapeStim(
             self.win,
@@ -217,7 +226,7 @@ class Trial():
         objective_position = np.random.uniform(-np.pi/2, np.pi/2)
         objective_direction = np.random.choice([1,-1])
 
-        video_filename = os.path.join(os.path.join(self.results_dir,"videos"), f"{self.__class__.__name__}_block_{self.block_id}_trial{self.trial_id}")
+        video_filename = os.path.join(os.path.join(self.dir_name,"videos"), f"{self.__class__.__name__}_block_{self.block_id}_trial{self.trial_id}")
 
         cap=cv2.VideoCapture(0)
         self.camera_is_recording = False
@@ -277,24 +286,41 @@ class Trial():
                 actual_time = core.getTime()
                 task_time = actual_time-start_time
                 click_pos = mouse.getPos()
+            task_data['TargetX'] = objective.pos[0]
+            task_data['TargetY'] = objective.pos[1]
+            task_data['Task_time'] = task_time
             if task_time <= self.motor_task_time_limit:
-                print(math.sqrt(pow((objective.pos[0]- click_pos[0])/self.win.size[0],2)+pow((objective.pos[1]- click_pos[1])/self.win.size[1],2)))
-                print(f"Task time {task_time}")
-                print(f"Movement start {motoric_movement_start-start_time}")
-                print(f"Movement duration {task_time-(motoric_movement_start-start_time)}")
-                ## todo save here
+                task_data['ClickX'] = click_pos[0]
+                task_data['ClickY'] = click_pos[1]
+                task_data['Movement_start'] = motoric_movement_start-start_time
+                task_data['Norm_Euc_Dist'] = math.sqrt(pow((objective.pos[0]- click_pos[0])/self.win.size[0],2)+pow((objective.pos[1]- click_pos[1])/self.win.size[1],2))
+                task_data['Movement_duration'] = task_time-(motoric_movement_start-start_time)
+                for key, val in task_data.items():
+                    print(f"{key}: {val}")
             else:
                 print("Task time out")
-                ## todo save here
+                task_data['ClickX'] = -1
+                task_data['ClickY'] = -1
+                task_data['Movement_start'] = -1
+                task_data['Norm_Euc_Dist'] = -1
+                task_data['Movement_duration'] = -1
         else:
             print("No key 'left' pressed - failed trial")
-            ## todo save here
+            task_data['TargetX'] = -1
+            task_data['TargetY'] = -1
+            task_data['Task_time'] = -1
+            task_data['ClickX'] = -1
+            task_data['ClickY'] = -1
+            task_data['Movement_start'] = -1
+            task_data['Norm_Euc_Dist'] = -1
+            task_data['Movement_duration'] = -1
         self.win.flip()
         self.win.flip()
         if self.camera_is_recording:
             self.camera_is_recording = False
             cam_thread.join()
         event.clearEvents(eventType='keyboard')
+        return task_data
         #model_inference_thread = threading.Thread(target=self.model_inference, args=(video_filename,))
         #model_inference_thread.start()
         #if cap.isOpened():

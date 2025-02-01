@@ -1,9 +1,11 @@
 from mitmotexperiment.Trial import Trial
 from psychopy import visual, core, event, gui
+from datetime import datetime
 import numpy as np
 import math
 import os
 import random
+import pandas as pd
 
 class MIT(Trial):
     
@@ -48,6 +50,23 @@ class MIT(Trial):
 
     def do_single_trial(self, block_id, tral_id):
         super().do_single_trial(block_id, tral_id)
+        current_datetime = datetime.now()
+        self.new_row_df = {'Block': block_id, 
+                           'Trial': tral_id, 
+                           'Type': 'MIT', 
+                           'Timestamp': current_datetime.strftime('%Y-%m-%d %H:%M:%S'), 
+                           'Ground_truth_guess': None, 
+                           'Guess': None, 
+                           'Guess_success': None, 
+                           'MIT_obj_identified': None, 
+                           'TargetX': None, 
+                           'TargetY': None, 
+                           'ClickX': None, 
+                           'ClickY': None, 
+                           'Norm_Euc_Dist': None, 
+                           'Task_time': None, 
+                           'Movement_start': None, 
+                           'Movement_duration': None}
         self.randomize_variables()
         if self.img_mode:
             self.create_objects()
@@ -75,8 +94,8 @@ class MIT(Trial):
         # Choose object for guessing
         guess_object = self.revealing_guess_object()
 
-        self.motoric_task()
-
+        task_data = self.motoric_task()
+        self.new_row_df.update({k: task_data[k] for k in task_data if k in self.new_row_df})
         # Answering window
         ground_truth, choice = self.answer_if_distractor_or_target(guess_object)
         if choice != -1:
@@ -86,6 +105,16 @@ class MIT(Trial):
             # Results window
             if self.show_trial_results and success != -1:
                 self.show_results_window(ground_truth, choice, success)
+        else:
+            success = -1
+        self.new_row_df['Ground_truth_guess'] = ground_truth
+        self.new_row_df['Guess'] = choice
+        self.new_row_df['Guess_success'] = choice == ground_truth if choice != -1 else choice
+        self.new_row_df['MIT_obj_identified'] = success
+        
+        self.df.loc[len(self.df)] = self.new_row_df
+        self.df.to_csv(os.path.join(self.dir_name, f"{os.path.basename(os.path.normpath(self.dir_name))}.csv"), index=True)
+        
 
     def create_objects(self):
         self.targets = [visual.ImageStim(self.win, size=(self.obj_radius*2, self.obj_radius*2), image=self.png_files[i], pos=None) for i in range(self.n_targets)]
