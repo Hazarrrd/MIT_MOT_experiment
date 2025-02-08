@@ -53,7 +53,7 @@ class MOT(Trial):
                 
         self.new_row_df['Ground_truth_guess'] = ground_truth
         self.new_row_df['Guess'] = choice
-        self.new_row_df['Guess_success'] = choice == ground_truth if choice != -1 else choice
+        self.new_row_df['Guess_success'] = int(choice == ground_truth) if choice != -1 else choice
         
         self.df.loc[len(self.df)] = self.new_row_df
         self.df.to_csv(os.path.join(self.dir_name, f"{os.path.basename(os.path.normpath(self.dir_name))}.csv"), index=True)

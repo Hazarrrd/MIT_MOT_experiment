@@ -10,7 +10,7 @@ import glob
 
 ##TODO
 ## ogarnij zapisywanie analizy posea
-## ogarnij kalibracje i miary ppsea
+## ogarnij kalibracje i miary posea
 
 ##DO OBGADANIA!
 ## od kiedy kazac im trzymac palec?

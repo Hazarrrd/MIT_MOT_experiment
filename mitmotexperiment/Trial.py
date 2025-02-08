@@ -19,6 +19,7 @@ class Trial():
                 random_direction_small_circles, random_direction_big_circle, random_offset_target_distractor, random_offset_circles, random_distractor_target_orientation,
                 observation_time,tracking_time, guessing_time, direction_changes, direction_changes_motoric, change_big_direction, show_trial_results, path_for_mit_icons, img_mode, 
                 motoric_radius, motoric_circle_radius, hz_motoric, answer_1_time_limit, answer_MIT_time_limit, motor_task_time_limit, dir_name, df):
+        self.motoric_movement_start = -1
         self.win = win
         self.df = df
         self.show_circles = show_circles
@@ -227,24 +228,24 @@ class Trial():
         objective_direction = np.random.choice([1,-1])
 
         video_filename = os.path.join(os.path.join(self.dir_name,"videos"), f"{self.__class__.__name__}_block_{self.block_id}_trial{self.trial_id}")
-
+        self.motoric_movement_start = -1
         cap=cv2.VideoCapture(0)
         self.camera_is_recording = False
         if cap and cap.isOpened():
             self.camera_is_recording = True
-            cap.release()
+           # cap.release()
         if self.camera_is_recording:
-            # cam_thread = threading.Thread(target=self.camera_recording_opencv, args=(video_filename,cap))
-            cam_thread = threading.Thread(target=self.camera_recording_ffmpg, args=(video_filename,))
+            cam_thread = threading.Thread(target=self.camera_recording_opencv, args=(video_filename,cap))
+           # cam_thread = threading.Thread(target=self.camera_recording_ffmpg, args=(video_filename,))
             cam_thread.start()
         
         mouse = event.Mouse(win=self.win)
         self.win.flip()
-        time.sleep(0.5) ## camera starting time
+        time.sleep(1) ## camera starting time
        
         keys = []
         last_key_time = 0
-        motoric_movement_start = -1
+        
         self.kb.clock.reset()  # when you want to start the timer from
         keys = self.kb.getKeys( waitRelease=False)
         if len(keys)==1 and keys[0].value == "left":
@@ -254,9 +255,9 @@ class Trial():
             change_direction = 1
             while not mouse.getPressed()[0] and task_time < self.motor_task_time_limit:
                 self.win.flip()
-                if motoric_movement_start == -1 and not self.kb.getState(keys):
-                    motoric_movement_start = core.getTime()
-                    print(f"Hand movement started {motoric_movement_start-start_time}")
+                if self.motoric_movement_start == -1 and not self.kb.getState(keys):
+                    self.motoric_movement_start = core.getTime()
+                    print(f"Hand movement started {self.motoric_movement_start-start_time}")
                 if self.time_of_mov_changes_motoric:
                     for move_change in self.time_of_mov_changes_motoric:
                         if move_change < task_time:
@@ -292,9 +293,9 @@ class Trial():
             if task_time <= self.motor_task_time_limit:
                 task_data['ClickX'] = click_pos[0]
                 task_data['ClickY'] = click_pos[1]
-                task_data['Movement_start'] = motoric_movement_start-start_time
+                task_data['Movement_start'] = self.motoric_movement_start-start_time
                 task_data['Norm_Euc_Dist'] = math.sqrt(pow((objective.pos[0]- click_pos[0])/self.win.size[0],2)+pow((objective.pos[1]- click_pos[1])/self.win.size[1],2))
-                task_data['Movement_duration'] = task_time-(motoric_movement_start-start_time)
+                task_data['Movement_duration'] = task_time-(self.motoric_movement_start-start_time)
                 for key, val in task_data.items():
                     print(f"{key}: {val}")
             else:
@@ -319,6 +320,9 @@ class Trial():
         if self.camera_is_recording:
             self.camera_is_recording = False
             cam_thread.join()
+            if cap.isOpened():
+                cv2.destroyAllWindows()
+                cap.release()
         event.clearEvents(eventType='keyboard')
         return task_data
         #model_inference_thread = threading.Thread(target=self.model_inference, args=(video_filename,))
@@ -364,17 +368,23 @@ class Trial():
     def camera_recording_opencv(self, video_filename, cap):
 
        # frame_width, frame_height, FPS_DESIRE, format_cam = 640, 480, 30, "YUYV"
-        frame_width, frame_height, FPS_DESIRE, format_cam = 1280, 720, 60, "MJPG"
+        frame_width, frame_height, FPS_DESIRE, format_cam = 1280, 720, 25, "MJPG"
+        # Set the capture properties (resolution and FPS)
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, frame_width)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, frame_height)
         cap.set(cv2.CAP_PROP_FPS, FPS_DESIRE)
-        cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*format_cam))
-        out = cv2.VideoWriter(video_filename+".mp4", cv2.VideoWriter_fourcc(*format_cam),FPS_DESIRE, (frame_width, frame_height))
+        cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*format_cam))  # MJPEG codec
+#MP4V
+        # Create VideoWriter object to save the video
+        # Using 'XVID' or 'MJPG' codec for .avi or .mp4
+        fourcc = cv2.VideoWriter_fourcc(*'MP4V')  # or use 'XVID' for .avi
+        out = cv2.VideoWriter(video_filename + ".mp4", fourcc, FPS_DESIRE, (frame_width, frame_height))
+
         
         while self.camera_is_recording:
             if cap.isOpened():
                 ret, frame = cap.read()
-                if ret:
+                if ret and self.motoric_movement_start > -1:
                     out.write(frame)
         out.release()
 

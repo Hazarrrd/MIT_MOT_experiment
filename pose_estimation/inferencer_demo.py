@@ -25,7 +25,8 @@ def get_predictions(
 ) -> None:
     if not inferencer:
        # inferencer = MMPoseInferencer(pose2d=model_str)
-       inferencer = MMPoseInferencer(pose2d=model_str)
+       #MMPoseInferencer("rtmw-x_8xb704-270e_cocktail14-256x192") 
+       inferencer = MMPoseInferencer("rtmw-x_8xb320-270e_cocktail14-384x288") 
       #  inferencer = MMPoseInferencer(
       #  det_model = "/home/janek/numlabs/repozytoria/ext_2024_MOT_and_pose_research/models/det_models/rtmdet_m_640-8xb32_coco-person.py",
      #   det_weights = "/home/janek/numlabs/repozytoria/ext_2024_MOT_and_pose_research/models/det_models/rtmdet_m_8xb32-100e_coco-obj365-person-235e8209.pth",
@@ -36,7 +37,7 @@ def get_predictions(
     time_start = time.time()
     results = []
     to_test = []
-    for prediction in tqdm(inferencer(inputs=str(input_path), batch_size=16, vis_out_dir=str(output_path), draw_bbox=True, thickness = 1, radius = 1)):
+    for prediction in tqdm(inferencer(inputs=str(input_path),num_instances=1,kpt_thr=0.5, batch_size=16, vis_out_dir=str(output_path), draw_bbox=True, thickness = 1, radius = 1)):
         for idx,frame_result in enumerate(prediction["predictions"]):
             frame_data = []
             for bb in frame_result:
@@ -60,7 +61,7 @@ def get_predictions(
             results.append(frame_data)
 
     # Save extracted prediction details to a file
-    results_file = output_path / f"{model_str}_predictions.json"
+    results_file = output_path / f"{input_path.stem}_predictions.json"
     with open(results_file, "w") as f:
         import json
         json.dump(results, f, indent=4)
