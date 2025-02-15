@@ -28,6 +28,7 @@ except (ImportError, ModuleNotFoundError):
 
 from rtmpose3d import *  # noqa: F401, F403
 
+import torch
 
 def parse_args():
     parser = ArgumentParser()

@@ -26,7 +26,7 @@ def model_inference3D(path_to_experiment):
         process.wait()
         
 experiment = "results/experiment_2025-02-08-20:52:49/"
-model_inference(experiment)
+#model_inference(experiment)
 model_inference3D(experiment)
 for filename in glob.glob(f"{experiment}videos/*"):
     get_metrics(experiment, filename.split("/")[-1].split(".")[0])
