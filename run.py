@@ -7,27 +7,32 @@ import os
 import numpy as np
 import subprocess
 import glob
+import random
 
 ##TODO
-## ogarnij zapisywanie analizy posea
-## ogarnij kalibracje i miary posea
+## ogarnij kalibracje (dystans od obiektu idealnie, pixel real odległość) i miary posea
+## ogarnij deploy na windowsa i kamere
 
 ##DO OBGADANIA!
-## od kiedy kazac im trzymac palec?
+# case dla np. 2 MOT/MIT i guess pojawia się kompletnie gdzie indziej, bardzo łatwo, czy zmienic zeby tylko sąsiad był wybierany?
 ## FPSy - kamera zmiana/próba ogarnienica ustawien swiatla - cel 60
-## Modele, czy 2d starczy, jak 3D to raczej ptorzbuję 2 takich samych kamer i statywów
 ## ogarnij instrukcje 
 ## Wstaw śnieżki od Olgi
 
 ##### CONFIGURATION:
-#win_size = [2560, 1440] 
+win_size = [2560, 1440] 
 #win_size = [1280, 1024]
-win_size = [800, 800] ##should be set accordingly to monitor resolution even when FULL_SIZE!!!
-full_size = True
-show_circles = False
+#win_size = [1920, 1080] ##should be set accordingly to monitor resolution even when FULL_SIZE!!!
+full_size = False
+show_circles = True
 show_trial_results = True
 do_inference_after = False
 fps = 60
+
+training_trials_per_block = 0 #12
+trials_per_block = 1 
+block_pairs_number = 3
+target_circles_ammount_settups = [[2,5]] ##[X,Y] X - number of targets, Y - number of circles
   # Set desired FPS
 
 
@@ -37,14 +42,13 @@ obj_radius = small_circle_radius/3.5
 motoric_radius = obj_radius *3
 motoric_circle_radius = small_circle_radius * 2
 
-n_targets = 4
 hz_target = 0.45 # cycles per second
 hz_circle = 0.1 # cycles per second
 hz_motoric = 0.45
 
-observation_time = 1
-tracking_time = 1  # seconds
-guessing_time = 1  # seconds  ##Marking time
+observation_time = 3
+tracking_time = 3  # seconds
+guessing_time = 3  # seconds  ##Marking time
 
 #[[t1,t2],[t3,t4]...] - each circle will change direction two times - in time sampled from t1 <= t <= t2 and in time sampled from t3 <= t <= t4
 #pass direction_changes = [] in order to skip directions changes
@@ -108,7 +112,6 @@ if __name__ == '__main__':
     circle_radius=circle_radius, 
     small_circle_radius=small_circle_radius, 
     obj_radius=obj_radius, 
-    n_targets=n_targets, 
     hz_target=hz_target, 
     hz_circle=hz_circle, 
     instruction_1=instruction_1, 
@@ -138,9 +141,18 @@ if __name__ == '__main__':
 )
     experiment.initialize_mot()
     experiment.initialize_mit()
-
-    experiment.run_MOT_block(2)
-    experiment.run_MIT_block(1)
+    
+    block_type_list = ["MOT", "MIT"]
+    random.shuffle(block_type_list)
+    
+    if training_trials_per_block > 0:
+        experiment.run_block(block_type_list[0],training_trials_per_block,target_circles_ammount_settups, is_training=True)
+        experiment.run_block(block_type_list[1],training_trials_per_block,target_circles_ammount_settups, is_training=True)
+    
+    for i in range(block_pairs_number):
+        experiment.run_block(block_type_list[0],trials_per_block,target_circles_ammount_settups, is_training=False)
+        experiment.run_block(block_type_list[1],trials_per_block,target_circles_ammount_settups, is_training=False)
+    
     experiment.close()
     if do_inference_after:
         model_inference(experiment.dir_name)

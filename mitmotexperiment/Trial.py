@@ -15,10 +15,11 @@ xlib.XInitThreads()
 
 
 class Trial():
-    def __init__(self, win, show_circles, circle_radius, small_circle_radius, obj_radius, n_targets, hz_target, hz_circle, instruction_1, instruction_2, instruction_2_MIT, fps,
+    def __init__(self, win, show_circles, circle_radius, small_circle_radius, obj_radius, hz_target, hz_circle, instruction_1, instruction_2, instruction_2_MIT, fps,
                 random_direction_small_circles, random_direction_big_circle, random_offset_target_distractor, random_offset_circles, random_distractor_target_orientation,
                 observation_time,tracking_time, guessing_time, direction_changes, direction_changes_motoric, change_big_direction, show_trial_results, path_for_mit_icons, img_mode, 
-                motoric_radius, motoric_circle_radius, hz_motoric, answer_1_time_limit, answer_MIT_time_limit, motor_task_time_limit, dir_name, df):
+                motoric_radius, motoric_circle_radius, hz_motoric, answer_1_time_limit, answer_MIT_time_limit, motor_task_time_limit, dir_name, df, form):
+        self.form = form
         self.motoric_movement_start = -1
         self.win = win
         self.df = df
@@ -26,7 +27,6 @@ class Trial():
         self.circle_radius = circle_radius
         self.small_circle_radius = small_circle_radius
         self.obj_radius = obj_radius
-        self.n_targets = n_targets
         self.instruction_1 = instruction_1
         self.instruction_2 = instruction_2
         self.instruction_2_MIT = instruction_2_MIT
@@ -45,11 +45,7 @@ class Trial():
         self.random_distractor_target_orientation = random_distractor_target_orientation
         self.fps = fps
         ## setting variables
-        self.n_distractors = n_targets
-        self.n_circles = n_targets
-        hz_distr = hz_target # cycles per second
-        self.speed_distr = (hz_distr/fps)*2*np.pi   
-        self.speed_target = (hz_target/fps)*2*np.pi 
+        self.speed_objects = (hz_target/fps)*2*np.pi 
         self.speed_circle = (hz_circle/fps)*2*np.pi
         self.frame_duration = 1.0 / fps  # Duration of each frame in seconds
         self.img_mode = img_mode
@@ -66,6 +62,12 @@ class Trial():
         self.camera_is_recording = False
         self.kb = keyboard.Keyboard()
 
+    def set_params_for_block(self, n_targets, n_circles):
+        self.n_targets = n_targets
+        self.n_circles = n_circles
+        self.n_distractors = 2*self.n_circles - self.n_targets
+        self.n_objects = self.n_targets + self.n_distractors
+        
     def randomize_variables(self):
         # Adding demanded randomness
         if self.random_direction_big_circle:
@@ -79,16 +81,13 @@ class Trial():
             self.small_circle_direction = np.ones(self.n_circles)
 
         if self.random_offset_target_distractor:
-            # POSSIBLE PARAMETER FOR MID CIRCLES PROBLEM
-           # target_distractor_offset = np.random.uniform(np.pi/2-np.pi/3, np.pi/2 + np.pi/3, size=self.n_targets)
-            target_distractor_offset = np.random.uniform(-np.pi/2, np.pi/2, size=self.n_targets)
+            objects_offset = np.random.uniform(-np.pi/2, np.pi/2, size=self.n_circles)
         else:
-            target_distractor_offset = np.zeros(self.n_targets) + np.pi/2
+            objects_offset = np.zeros(self.n_circles) + np.pi/2
 
-        circles_offset = np.pi/2 + np.pi/self.n_targets
+        circles_offset = np.pi/2 + np.pi/self.n_circles
         if self.random_offset_circles:
-            # POSSIBLE PARAMETER FOR MID CIRCLES PROBLEM
-            circles_offset += np.random.uniform(-(np.pi/self.n_targets)/3,(np.pi/self.n_targets)/3) 
+            circles_offset += np.random.uniform(-(np.pi/self.n_circles)/3,(np.pi/self.n_circles)/3) 
 
         self.time_of_mov_changes = []
         if self.direction_changes:
@@ -104,26 +103,26 @@ class Trial():
             for time_frame in self.direction_changes_motoric:
                 self.time_of_mov_changes_motoric.append(np.random.uniform(time_frame[0], time_frame[1]))
         self.time_of_mov_changes_motoric = sorted(self.time_of_mov_changes_motoric)
-      #  print(self.time_of_mov_changes)
+
         # Assign random directions for each object
-        #angles = np.random.rand(len(all_objects)) * 2 * np.pi  # random initial direction in radians
-        self.angles_distr = np.array([])
-        self.angles_targets = np.array([])
-        for i in range(self.n_targets):
+        self.angles_pair_1 = np.array([])
+        self.angles_pair_2 = np.array([])
+        for i in range(self.n_circles):
             if self.random_distractor_target_orientation:
                 rnd = np.random.choice([np.pi,0]) 
             else:
                 rnd = np.pi
-            self.angles_distr = np.append(self.angles_distr, np.pi-rnd)
-            self.angles_targets = np.append(self.angles_targets,rnd)
-        self.angles_distr += target_distractor_offset
-        self.angles_targets += target_distractor_offset
+            self.angles_pair_1 = np.append(self.angles_pair_1, np.pi-rnd)
+            self.angles_pair_2 = np.append(self.angles_pair_2,rnd)
+        self.angles_pair_1 += objects_offset
+        self.angles_pair_2 += objects_offset
         self.angles_circle = np.linspace(0, 2 * np.pi, self.n_circles, endpoint=False) + circles_offset
 
     ## abstract method 
-    def do_single_trial(self, block_id, trial_id):
+    def do_single_trial(self, block_id, trial_id, is_training):
         self.block_id = block_id
         self.trial_id = trial_id
+        self.is_training = is_training
 
     ## abstract method 
     def create_objects(self):
@@ -148,8 +147,8 @@ class Trial():
     def observation_phase(self):
         # Start the Tracking Phase
         self.update_circles()
-        self.update_positions(self.distractors, self.angles_distr, self.speed_distr, self.small_circles, self.small_circle_direction)
-        self.update_positions(self.targets, self.angles_targets, self.speed_target, self.small_circles, self.small_circle_direction)
+        self.update_positions(self.pair_1, self.angles_pair_1, self.speed_objects, self.small_circles, self.small_circle_direction)
+        self.update_positions(self.pair_2, self.angles_pair_2, self.speed_objects, self.small_circles, self.small_circle_direction)
         
         for target in self.targets:
             visual.Circle(self.win, radius=self.obj_radius + 20, pos=(target.pos[0], target.pos[1]), fillColor=None, lineColor='green', lineWidth=10).draw()
@@ -179,8 +178,8 @@ class Trial():
             self.win.flip()
             self.update_directions(actual_time - start_time)
             self.update_circles()
-            self.update_positions(self.distractors, self.angles_distr, self.speed_distr, self.small_circles, self.small_circle_direction)
-            self.update_positions(self.targets, self.angles_targets, self.speed_target, self.small_circles, self.small_circle_direction)
+            self.update_positions(self.pair_1, self.angles_pair_1, self.speed_objects, self.small_circles, self.small_circle_direction)
+            self.update_positions(self.pair_2, self.angles_pair_2, self.speed_objects, self.small_circles, self.small_circle_direction)
 
             for obj in self.all_objects:
                 obj.draw()
@@ -195,8 +194,9 @@ class Trial():
     def revealing_guess_object(self):
         self.win.flip()    
         for obj in self.all_objects:
-                    obj.draw()
-        to_guess = np.random.choice(self.targets+self.distractors)
+            obj.draw()
+        to_guess_obj_or_dist = self.targets if np.random.rand() < 0.5 else self.distractors
+        to_guess = np.random.choice(to_guess_obj_or_dist)
         visual.Circle(self.win, radius=self.obj_radius + 20, pos=(to_guess.pos[0], to_guess.pos[1]), fillColor=None, lineColor='blue', lineWidth=10).draw()
         self.win.flip()
         core.wait(self.guessing_time)
@@ -422,7 +422,7 @@ class Trial():
             task_time = actual_time-start_time
         if task_time > self.answer_1_time_limit:
             choice = -1
-        return ground_truth, choice
+        return ground_truth, choice, task_time
 
     ## abstracion function
     def show_results_window(self, ground_truth, choice):

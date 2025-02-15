@@ -1,17 +1,22 @@
 from psychopy import visual, core, event, gui
 from mitmotexperiment.MOT import MOT
 from mitmotexperiment.MIT import MIT
+from mitmotexperiment.ParticipantForm import ParticipantForm
 from datetime import datetime
 import os
 import sys
 import pandas as pd
 import numpy as np
 import json
+import random
 
 class Experiment():
     def __init__(self, win_size = (800,800), full_size = True, results_dir = None):
         # Create the Window
         self.win = visual.Window(win_size, fullscr=full_size, color="gray", units="pix")
+        self.win.flip()
+        self.form = ParticipantForm(self.win)
+        self.form.show_form()
         event.globalKeys.add(key='escape', func=self.escape_handler)
         self.block_id = 0
         
@@ -27,25 +32,37 @@ class Experiment():
             print(f"Directory '{dir_name}' already exists.")
             sys.exit()
         self.dir_name = dir_name
-
+     
         # Define data
         data = {
+            'First_name': [],
+            'Last_name': [],
+            'Gender': [],
+            'Email': [],
             'Block': [],
             'Trial': [],
             'Type': [],
+            'Is_training': [],
+            'N_targets': [],
+            'N_distractors': [],
+            'N_circles': [],
             'Timestamp': [],
             'Ground_truth_guess': [],
             'Guess': [],
             'Guess_success': [],
+            'Task_time_guess': [],
             'MIT_obj_identified': [],
+            'Task_time_identification': [],
             'TargetX': [],
             'TargetY': [],
             'ClickX': [],
             'ClickY': [],
             'Norm_Euc_Dist': [],
-            'Task_time': [],
+            'Task_time_motoric': [],
             'Movement_start': [],
             'Movement_duration': [],
+            "Indicated_img": [],
+            "Img_to_guess": []
         }
         # Create a DataFrame
         df = pd.DataFrame(data)
@@ -56,7 +73,6 @@ class Experiment():
      #   if not os.path.exists(os.path.join(results_dir, "results.csv")):
      #       df.to_csv(os.path.join(results_dir, "results.csv"), index=True)
         
-
 
     def upload_param(self, **kwargs):
         self.params = list(kwargs.values())
@@ -71,20 +87,31 @@ class Experiment():
         core.quit()
 
     def initialize_mit(self):
-        self.mit_obj = MIT(self.win, *self.params, self.dir_name,self.df)
+        self.mit_obj = MIT(self.win, *self.params, self.dir_name,self.df, self.form)
     
     def initialize_mot(self):
-        self.mot_obj = MOT(self.win, *self.params, self.dir_name,self.df)
+        self.mot_obj = MOT(self.win, *self.params, self.dir_name,self.df, self.form)
     
-    def run_MIT_block(self, block_size):
+    def run_block(self, block_type, block_size, target_circles_ammount_settups, is_training = False):
+        if block_type == "MOT":
+            block_obj = self.mot_obj
+        elif block_type == "MIT":
+            block_obj = self.mit_obj
+            
+        if block_size % len(target_circles_ammount_settups) != 0:
+            raise ValueError('ERROR: block_size must be a multiple of target_circles_ammount_settups list length to show each setup with equal frequency')
+            self.close()
+        expanded_list = []
+        for i in range(len(target_circles_ammount_settups)):
+            expanded_list.extend([target_circles_ammount_settups[i]] * (block_size//len(target_circles_ammount_settups)))
+        if not is_training:
+            random.shuffle(expanded_list)
         self.block_id +=1
-        for i in range(block_size):
-            self.mit_obj.do_single_trial(self.block_id, i)
-    
-    def run_MOT_block(self, block_size):
-        self.block_id +=1
-        for i in range(block_size):
-            self.mot_obj.do_single_trial(self.block_id, i)
+        trial_id = 0
+        for n_targets, n_circles in expanded_list:
+            trial_id +=1
+            block_obj.set_params_for_block(n_targets, n_circles)
+            block_obj.do_single_trial(self.block_id, trial_id, is_training)
 
     def close(self):
         """Closes the experiment window and releases resources."""

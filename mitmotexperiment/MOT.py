@@ -3,31 +3,45 @@ from psychopy import visual, core, event, gui
 from datetime import datetime
 import pandas as pd
 import os
+import random
 
 class MOT(Trial):
     
-    def do_single_trial(self, block_id, tral_id):
-        super().do_single_trial(block_id, tral_id)
+    def do_single_trial(self, block_id, tral_id, is_training):
+        super().do_single_trial(block_id, tral_id, is_training)
         current_datetime = datetime.now()
-        self.new_row_df = {'Block': block_id, 
-                           'Trial': tral_id, 
-                           'Type': 'MOT', 
-                           'Timestamp': current_datetime.strftime('%Y-%m-%d %H:%M:%S'), 
-                           'Ground_truth_guess': None, 
-                           'Guess': None, 
-                           'Guess_success': None, 
-                           'MIT_obj_identified': 'MOT', 
-                           'TargetX': None, 
-                           'TargetY': None, 
-                           'ClickX': None, 
-                           'ClickY': None, 
-                           'Norm_Euc_Dist': None, 
-                           'Task_time': None, 
-                           'Movement_start': None, 
-                           'Movement_duration': None}
+        self.new_row_df = {
+                            'First_name': self.form.form_data["Imię:"],
+                            'Last_name': self.form.form_data["Nazwisko:"],
+                            'Gender': self.form.form_data["Płeć:"],
+                            'Email': self.form.form_data["Email:"],
+                            'Block': block_id, 
+                            'Trial': tral_id, 
+                            'Type': 'MOT', 
+                            'Is_training': int(is_training),
+                            'N_targets': self.n_targets,
+                            'N_distractors': self.n_distractors,
+                            'N_circles': self.n_circles,
+                            'Timestamp': current_datetime.strftime('%Y-%m-%d %H:%M:%S'), 
+                            'Ground_truth_guess': None, 
+                            'Guess': None, 
+                            'Guess_success': None, 
+                            'Task_time_guess': None,
+                            'MIT_obj_identified': 'MOT',
+                            'Task_time_identification': 'MOT', 
+                            'TargetX': None, 
+                            'TargetY': None, 
+                            'ClickX': None, 
+                            'ClickY': None, 
+                            'Norm_Euc_Dist': None, 
+                            'Task_time_motoric': None, 
+                            'Movement_start': None, 
+                            'Movement_duration': None,
+                            "Indicated_img": 'MOT',
+                            "Img_to_guess": 'MOT'}
         self.randomize_variables()
         self.create_objects()
-
+        
         # Display Instructions
         instr = visual.TextStim(self.win, text=self.instruction_1, color="black")
         instr.draw()
@@ -45,7 +59,8 @@ class MOT(Trial):
         task_data = self.motoric_task()
         self.new_row_df.update({k: task_data[k] for k in task_data if k in self.new_row_df})
         # Answering window
-        ground_truth, choice = self.answer_if_distractor_or_target(guess_object)
+        ground_truth, choice, task_time_guess = self.answer_if_distractor_or_target(guess_object)
+        self.new_row_df['Task_time_guess']= task_time_guess
         if choice != -1:
             # Results window
             if self.show_trial_results:
@@ -54,7 +69,6 @@ class MOT(Trial):
         self.new_row_df['Ground_truth_guess'] = ground_truth
         self.new_row_df['Guess'] = choice
         self.new_row_df['Guess_success'] = int(choice == ground_truth) if choice != -1 else choice
-        
         self.df.loc[len(self.df)] = self.new_row_df
         self.df.to_csv(os.path.join(self.dir_name, f"{os.path.basename(os.path.normpath(self.dir_name))}.csv"), index=True)
         
@@ -62,6 +76,16 @@ class MOT(Trial):
         # Create target and distractor objects
         self.targets = [visual.Circle(self.win, radius=self.obj_radius, fillColor="black", pos=None) for i in range(self.n_targets)]
         self.distractors = [visual.Circle(self.win, radius=self.obj_radius, fillColor="black", pos=None) for i in range(self.n_distractors)]
+        self.pair_1 = [target for target in self.targets]
+        self.pair_2 = [distr for distr in self.distractors]
+
+        while len(self.pair_1) != len(self.pair_2):
+            if len(self.pair_1) > len(self.pair_2):
+                self.pair_2.append(self.pair_1.pop())  # Move from pair1 → pair2
+            else:
+                self.pair_1.append(self.pair_2.pop())  # Move from pair2 → pair1
+        random.shuffle(self.pair_1)
+        random.shuffle(self.pair_2)
         self.small_circles = [visual.Circle(self.win, radius=self.small_circle_radius, lineColor="white", fillColor=None, pos=None) for i in range(self.n_circles)]
 
         # Combine targets and distractors for tracking
