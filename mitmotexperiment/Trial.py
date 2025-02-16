@@ -8,8 +8,8 @@ import math
 import subprocess
 from psychopy.hardware import keyboard
 import ctypes
-xlib = ctypes.cdll.LoadLibrary("libX11.so")
-xlib.XInitThreads()
+#xlib = ctypes.cdll.LoadLibrary("libX11.so")
+#xlib.XInitThreads()
 ## Uncomment it if you want reproduce same randomness each program execution
 #np.random.seed(12201)
 
@@ -229,7 +229,7 @@ class Trial():
 
         video_filename = os.path.join(os.path.join(self.dir_name,"videos"), f"{self.__class__.__name__}_block_{self.block_id}_trial{self.trial_id}")
         self.motoric_movement_start = -1
-        cap=cv2.VideoCapture(0)
+        cap=cv2.VideoCapture(0, cv2.CAP_DSHOW)
         self.camera_is_recording = False
         if cap and cap.isOpened():
             self.camera_is_recording = True
@@ -241,7 +241,7 @@ class Trial():
         
         mouse = event.Mouse(win=self.win)
         self.win.flip()
-        time.sleep(1) ## camera starting time
+        time.sleep(2) ## camera starting time
        
         keys = []
         last_key_time = 0
@@ -377,8 +377,8 @@ class Trial():
 #MP4V
         # Create VideoWriter object to save the video
         # Using 'XVID' or 'MJPG' codec for .avi or .mp4
-        fourcc = cv2.VideoWriter_fourcc(*'MP4V')  # or use 'XVID' for .avi
-        out = cv2.VideoWriter(video_filename + ".mp4", fourcc, FPS_DESIRE, (frame_width, frame_height))
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')  # or use 'XVID' for .avi - MP4V for ubuntu
+        out = cv2.VideoWriter(video_filename + ".avi", fourcc, FPS_DESIRE, (frame_width, frame_height))
 
         
         while self.camera_is_recording:

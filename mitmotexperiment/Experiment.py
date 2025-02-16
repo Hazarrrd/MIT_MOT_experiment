@@ -21,7 +21,7 @@ class Experiment():
         self.block_id = 0
         
         # Generate a unique directory name with the current timestamp
-        timestamp = datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
+        timestamp = datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
         dir_name = os.path.join(results_dir, f"experiment_{timestamp}")
 
         # Create the directory if it doesn't exist

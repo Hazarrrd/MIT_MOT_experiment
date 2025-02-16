@@ -64,7 +64,7 @@ class MIT(Trial):
                             'N_targets': self.n_targets,
                             'N_distractors': self.n_distractors,
                             'N_circles': self.n_circles,
-                            'Timestamp': current_datetime.strftime('%Y-%m-%d %H:%M:%S'), 
+                            'Timestamp': current_datetime.strftime('%Y-%m-%d %H-%M-%S'), 
                             'Ground_truth_guess': None, 
                             'Guess': None, 
                             'Guess_success': None, 
@@ -113,7 +113,8 @@ class MIT(Trial):
         # Answering window
         ground_truth, choice, task_time_guess = self.answer_if_distractor_or_target(guess_object)
         self.new_row_df['Task_time_guess']= task_time_guess
-        task_time_indicate_target = 0
+        indicated_obj = None
+        task_time_identification = -1
         if choice != -1:
             # Indicate which target, for MIT
             indicated_obj, success, task_time_identification = self.indicate_target(guess_object)                
@@ -124,10 +125,10 @@ class MIT(Trial):
             success = -1
         self.new_row_df['Task_time_identification']= task_time_identification
         if success in [1,0]:
-            self.new_row_df['Indicated_img'] = indicated_obj.image.split("/")[-1]
+            self.new_row_df['Indicated_img'] =  os.path.basename(indicated_obj.image)
         else:
             self.new_row_df['Indicated_img'] = indicated_obj
-        self.new_row_df['Img_to_guess'] = guess_object.image.split("/")[-1]
+        self.new_row_df['Img_to_guess'] =  os.path.basename(guess_object.image)
             
         self.new_row_df['Ground_truth_guess'] = ground_truth
         self.new_row_df['Guess'] = choice

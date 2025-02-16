@@ -20,8 +20,8 @@ import random
 ## Wstaw śnieżki od Olgi
 
 ##### CONFIGURATION:
-win_size = [2560, 1440] 
-#win_size = [1280, 1024]
+#win_size = [2560, 1440] 
+win_size = [1280, 1024]
 #win_size = [1920, 1080] ##should be set accordingly to monitor resolution even when FULL_SIZE!!!
 full_size = False
 show_circles = True
@@ -74,8 +74,10 @@ random_offset_target_distractor = True
 random_offset_circles = True
 random_distractor_target_orientation = True
 
-path_for_mit_icons = "/home/janek/psychologia/MIT_MOT_experiment/icons_mit/icons"
-results_dir = "/home/janek/psychologia/MIT_MOT_experiment/results/"
+#path_for_mit_icons = "/home/janek/psychologia/MIT_MOT_experiment/icons_mit/icons"
+#results_dir = "/home/janek/psychologia/MIT_MOT_experiment/results/"
+path_for_mit_icons = r"C:/Users/janns/Desktop/psychologia/MIT_MOT_experiment/icons_mit/icons"
+results_dir = r"C:/Users/janns/Desktop/psychologia/MIT_MOT_experiment/results/"
 img_mode = True
 
 def model_inference(path_to_experiment):

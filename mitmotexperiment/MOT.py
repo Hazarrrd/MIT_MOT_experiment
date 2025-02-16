@@ -22,7 +22,7 @@ class MOT(Trial):
                             'N_targets': self.n_targets,
                             'N_distractors': self.n_distractors,
                             'N_circles': self.n_circles,
-                            'Timestamp': current_datetime.strftime('%Y-%m-%d %H:%M:%S'), 
+                            'Timestamp': current_datetime.strftime('%Y-%m-%d %H-%M-%S'), 
                             'Ground_truth_guess': None, 
                             'Guess': None, 
                             'Guess_success': None, 
