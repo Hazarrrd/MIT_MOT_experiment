@@ -368,7 +368,7 @@ class Trial():
     def camera_recording_opencv(self, video_filename, cap):
 
        # frame_width, frame_height, FPS_DESIRE, format_cam = 640, 480, 30, "YUYV"
-        frame_width, frame_height, FPS_DESIRE, format_cam = 1280, 720, 25, "MJPG"
+        frame_width, frame_height, FPS_DESIRE, format_cam = 1280, 720, 60, "MJPG"
         # Set the capture properties (resolution and FPS)
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, frame_width)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, frame_height)

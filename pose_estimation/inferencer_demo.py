@@ -10,6 +10,12 @@ from datetime import timedelta
 
 from mmpose.apis.inferencers import MMPoseInferencer
 from tqdm import tqdm
+import torch
+print("CUDA Available:", torch.cuda.is_available())
+print("CUDA Devices:", torch.cuda.device_count())
+print("Current Device:", torch.cuda.current_device())
+print("Device Name:", torch.cuda.get_device_name(0))
+
 
 
 def parse_args() -> argparse.Namespace:
@@ -23,6 +29,7 @@ def parse_args() -> argparse.Namespace:
 def get_predictions(
     input_path: pathlib.Path, output_path: pathlib.Path, model_str="rtmpose-l", compress: bool = False, inferencer = None, out_filename_sufix = ""
 ) -> None:
+    output_path.mkdir(parents=True, exist_ok=True)
     if not inferencer:
        # inferencer = MMPoseInferencer(pose2d=model_str)
        #MMPoseInferencer("rtmw-x_8xb704-270e_cocktail14-256x192") 
