@@ -10,14 +10,13 @@ import glob
 import random
 
 ##TODO
-## ogarnij kalibracje (dystans od obiektu idealnie, pixel real odległość) i miary posea
-## ogarnij deploy na windowsa i kamere
+## ogarnij skalowanie rzecywistosc - piksel
+## deploy na komp w labbie
+## podmien sniezki
+## wstaw dobre liczby do eksperymentu
 
 ##DO OBGADANIA!
 # case dla np. 2 MOT/MIT i guess pojawia się kompletnie gdzie indziej, bardzo łatwo, czy zmienic zeby tylko sąsiad był wybierany?
-## FPSy - kamera zmiana/próba ogarnienica ustawien swiatla - cel 60
-## ogarnij instrukcje 
-## Wstaw śnieżki od Olgi
 
 ##### CONFIGURATION:
 #win_size = [2560, 1440] 
@@ -63,8 +62,24 @@ motor_task_time_limit = 10
 #pass direction_changes_motoric = [] in order to skip directions changes
 direction_changes_motoric = [[1,motor_task_time_limit]]
 
+instruction_main_mot = f"INSTRUKCJA \n \n \n Za chwilę zostanie Ci przedstawiona gra która polega na uwagowym śledzeniu poruszających się obiektów. Każda próba będzie zaczynała się gdy naciśniesz klawisz 'w dół' – trzymaj na nim palec do momentu, który zostanie opisany w dalszej części instrukcji.\n \n \
+Na początku każdej próby zobaczysz na ekranie losowo rozmieszczone czarne koła. Część z nich zostanie oznaczona zieloną obwódką jako cele. Należy zapamiętać, które koła są celami, ponieważ oznaczenie po krótkiej chwili zniknie i wszystkie czarne koła zaczną się poruszać w dość losowy sposób. Podczas gdy czarne koła poruszają się, staraj się śledzić te, które zostały oznaczone jako cele. Po kilku sekundach wszystkie koła zatrzymają się i jedno losowo wybrane koło zostanie oznaczone niebieską obwódką. Po krótkiej chwili koła znikną. \
+Następnie pojawi się zadanie w którym należy: zwolnić naciskany palcem klawisz i tym palcem dotknąć środka czarnego koła, które będzie się poruszało po ekranie. Środek koła został oznaczony białym znakiem +. Nie zwlekaj zbyt z długo z odpowiedzią.  Gdy wykonujesz ruch staraj się by był jak najbardziej pewny, prosty. Gdy wykonasz zadanie wróć palec na klawisz.   \
+Następie na ekranie zobaczysz dwa koła: zielone i czerwone. Jeżeli uważasz, że oznaczone niebieską obwódką czarne koło było celem – należy wybrać zielone koło; jeżeli uważasz, że oznaczone niebieską obwódką czarne koło nie było celem, wybierz czerwone koło. Żeby wybrać koło (zielone lub czerwone) należy zwolnić klawisz i dotknąć koła na ekranie palcem, którym wcześniej naciskało się klawisz. Gdy udzielisz odpowiedzi i ponownie naciśniesz klawisz rozpocznie się kolejna próba. \n \n \
+Będzie {training_trials_per_block} prób, podczas których nauczysz się wykonywać zadanie. Po treningu rozpoczną się próby właściwe. \n \
+Jeśli masz jakieś pytania lub wątpliwości, możesz zgłosić je teraz osobie prowadzącej. Jeżeli nie, wciśnij klawisz, aby przejść dalej."
 
-instruction_1 = "Keep track of the blue targets. Press 'left' key to start and hold it until end of the trial."
+instruction_main_mit = f"INSTRUKCJA \n \n \n  Za chwilę zostanie Ci przedstawiona gra która polega na uwagowym śledzeniu poruszających się obiektów. Każda próba będzie zaczynała się gdy naciśniesz klawisz – przy każdej próbie trzymaj na nim palec do momentu, który zostanie opisany w dalszej części instrukcji. \n \n \
+Na początku każdej próby zobaczysz losowo rozmieszczone figury, które przypominają płatki śniegu. Część z nich zostanie oznaczona zieloną obwódką jako cele. Należy zapamiętać, które płatki śniegu są celami, ponieważ oznaczenie po krótkiej chwili zniknie i wszystkie płatki śniegu zaczną się poruszać w dość losowy sposób. Podczas gdy płatki śniegu poruszają się, staraj się śledzić te, które zostały oznaczone jako cele.  Po kilku sekundach wszystkie płatki zatrzymają się i zostaną ukryte pod czarnymi kołami, a jeden z nich zostanie oznaczony niebieską obwódką.  Po krótkiej chwili koła znikną. \
+Następnie pojawi się zadanie w którym należy: zwolnić naciskany palcem klawisz i tym palcem dotknąć środka czarnego koła, które będzie się poruszało po ekranie. Środek koła został oznaczony białym znakiem +. Nie zwlekaj zbyt z długo z odpowiedzią.  Gdy wykonujesz ruch staraj się by był jak najbardziej pewny, prosty. Gdy wykonasz zadanie wróć palec na klawisz. \
+Następie na ekranie zobaczysz dwa koła: zielone i czerwone. Jeżeli uważasz, że oznaczony niebieską obwódką płatek śniegu ukryty pod czarnym kołem był celem – należy wybrać zielone koło; jeżeli uważasz, że oznaczony niebieską obwódką płatek śniegu ukryty pod czarnym kołem nie był celem, wybierz czerwone koło.  Żeby wybrać koło (zielone lub czerwone) należy zwolnić klawisz i dotknąć koła na ekranie palcem, którym wcześniej naciskało się klawisz.  Po wyborze wróć palec na klawisz.\
+Jako ostatnie zadanie na ekranie pojawią się rozmieszczone w okręgu płatki śniegu, które wcześniej poruszały się po ekranie. Jeżeli uważasz, że oznaczone niebieską obwódką koło kryło płatek śniegu będący celem, zwolnij klawisz i dotknij palcem jego odpowiednik na ekranie. Jeżeli uważasz, że oznaczone niebieską obwódką czarne koło kryło płatek śniegu, który nie był celem, wybierz czerwone koło. Gdy udzielisz odpowiedzi i ponownie naciśniesz klawisz rozpocznie się kolejna próba. \n \n \
+Będzie {training_trials_per_block} prób, podczas których nauczysz się wykonywać zadanie. Po treningu rozpoczną się próby właściwe. \n \
+Jeśli masz jakieś pytania lub wątpliwości, możesz zgłosić je teraz osobie prowadzącej. Jeżeli nie, wciśnij klawisz, aby przejść dalej."
+
+info_about_experiment_start = f"Koniec bloku treningowego. Rozpoczynamy badanie. Wciśnij klawisz, aby przejść dalej"
+info_experiment_end = f"Koniec badania. Dziękujemy za udział."
+instruction_1 = "Wciśnij przycisk 'w dół', aby rozpocząć następną próbę i trzymaj go naciśnięty do momentu zadania z ruchomym czarnym kołem."
 instruction_2 = "The object was {ground_truth}. The user chose {choice}."
 instruction_2_MIT = "The object was {ground_truth}. The user chose {choice}. \n {identificiation}"
 
@@ -74,10 +89,10 @@ random_offset_target_distractor = True
 random_offset_circles = True
 random_distractor_target_orientation = True
 
-#path_for_mit_icons = "/home/janek/psychologia/MIT_MOT_experiment/icons_mit/icons"
-#results_dir = "/home/janek/psychologia/MIT_MOT_experiment/results/"
-path_for_mit_icons = r"C:/Users/janns/Desktop/psychologia/MIT_MOT_experiment/icons_mit/icons"
-results_dir = r"C:/Users/janns/Desktop/psychologia/MIT_MOT_experiment/results/"
+path_for_mit_icons = "/home/janek/psychologia/MIT_MOT_experiment/icons_mit/icons"
+results_dir = "/home/janek/psychologia/MIT_MOT_experiment/results/"
+#path_for_mit_icons = r"C:/Users/janns/Desktop/psychologia/MIT_MOT_experiment/icons_mit/icons"
+#results_dir = r"C:/Users/janns/Desktop/psychologia/MIT_MOT_experiment/results/"
 img_mode = True
 
 def model_inference(path_to_experiment):
@@ -148,13 +163,16 @@ if __name__ == '__main__':
     random.shuffle(block_type_list)
     
     if training_trials_per_block > 0:
+        experiment.show_text(instruction_main_mot)
         experiment.run_block(block_type_list[0],training_trials_per_block,target_circles_ammount_settups, is_training=True)
+        experiment.show_text(instruction_main_mit)
         experiment.run_block(block_type_list[1],training_trials_per_block,target_circles_ammount_settups, is_training=True)
     
+    experiment.show_text(info_about_experiment_start)
     for i in range(block_pairs_number):
         experiment.run_block(block_type_list[0],trials_per_block,target_circles_ammount_settups, is_training=False)
         experiment.run_block(block_type_list[1],trials_per_block,target_circles_ammount_settups, is_training=False)
-    
+    experiment.show_text(info_experiment_end)
     experiment.close()
     if do_inference_after:
         model_inference(experiment.dir_name)

@@ -73,7 +73,23 @@ class Experiment():
      #   if not os.path.exists(os.path.join(results_dir, "results.csv")):
      #       df.to_csv(os.path.join(results_dir, "results.csv"), index=True)
         
-
+    def show_text(self, text):
+        """
+        Displays the given text in a PsychoPy window for the specified duration.
+        
+        Parameters:
+        text (str): The text to display.
+        duration (float): The time in seconds to display the text. Default is 2 seconds.
+        """    
+        # Create a text stimulus
+        text_stim = visual.TextStim(self.win, wrapWidth=int(self.win.size[0]*0.9),  text=text, color="black")
+        
+        # Draw the text stimulus and flip the window
+        text_stim.draw()
+        self.win.flip()   
+        # Wait for the duration or until a key is pressed
+        event.waitKeys()
+    
     def upload_param(self, **kwargs):
         self.params = list(kwargs.values())
         # Save parameters to a JSON file in the created directory
