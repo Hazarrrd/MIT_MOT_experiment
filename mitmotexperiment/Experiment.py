@@ -73,6 +73,10 @@ class Experiment():
      #   if not os.path.exists(os.path.join(results_dir, "results.csv")):
      #       df.to_csv(os.path.join(results_dir, "results.csv"), index=True)
         
+    def set_mouse_visibility(self,mouse_visible):
+        mouse = event.Mouse(win=self.win)
+        mouse.setVisible(mouse_visible)
+        
     def show_text(self, text):
         """
         Displays the given text in a PsychoPy window for the specified duration.
@@ -88,7 +92,10 @@ class Experiment():
         text_stim.draw()
         self.win.flip()   
         # Wait for the duration or until a key is pressed
-        event.waitKeys()
+        while True:
+            keys = event.getKeys()
+            if 'down' in keys:
+                break
     
     def upload_param(self, **kwargs):
         self.params = list(kwargs.values())

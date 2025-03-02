@@ -46,7 +46,10 @@ class MOT(Trial):
         instr = visual.TextStim(self.win, text=self.instruction_1, color="black")
         instr.draw()
         self.win.flip()
-        event.waitKeys()
+        while True:
+            keys = event.getKeys()
+            if 'down' in keys:
+                break
 
         # Start the Observation Phase
         self.observation_phase()
@@ -57,6 +60,7 @@ class MOT(Trial):
         # Choose object for guessing
         guess_object = self.revealing_guess_object()
         task_data = self.motoric_task()
+        core.wait(0.2)
         self.new_row_df.update({k: task_data[k] for k in task_data if k in self.new_row_df})
         # Answering window
         ground_truth, choice, task_time_guess = self.answer_if_distractor_or_target(guess_object)
@@ -103,4 +107,7 @@ class MOT(Trial):
         result_msg.draw()
         self.win.flip()
         #core.wait(3)
-        event.waitKeys()
+        while True:
+            keys = event.getKeys()
+            if 'down' in keys:
+                break

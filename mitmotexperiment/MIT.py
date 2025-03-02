@@ -91,7 +91,10 @@ class MIT(Trial):
         instr = visual.TextStim(self.win, text=self.instruction_1, color="black")
         instr.draw()
         self.win.flip()
-        event.waitKeys()
+        while True:
+            keys = event.getKeys()
+            if 'down' in keys:
+                break
 
         # Start the Observation Phase
         self.observation_phase()
@@ -109,6 +112,7 @@ class MIT(Trial):
         guess_object = self.revealing_guess_object()
         
         task_data = self.motoric_task()
+        core.wait(0.2)
         self.new_row_df.update({k: task_data[k] for k in task_data if k in self.new_row_df})
         # Answering window
         ground_truth, choice, task_time_guess = self.answer_if_distractor_or_target(guess_object)
@@ -117,6 +121,7 @@ class MIT(Trial):
         task_time_identification = -1
         if choice != -1:
             # Indicate which target, for MIT
+            core.wait(0.2)
             indicated_obj, success, task_time_identification = self.indicate_target(guess_object)                
             # Results window
             if self.show_trial_results and success != -1:
@@ -278,4 +283,7 @@ class MIT(Trial):
         result_msg.draw()
         self.win.flip()
         #core.wait(3)
-        event.waitKeys()
+        while True:
+            keys = event.getKeys()
+            if 'down' in keys:
+                break

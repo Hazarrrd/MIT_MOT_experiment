@@ -26,6 +26,7 @@ full_size = False
 show_circles = True
 show_trial_results = True
 do_inference_after = False
+mouse_visible = True
 fps = 60
 
 training_trials_per_block = 0 #12
@@ -89,10 +90,10 @@ random_offset_target_distractor = True
 random_offset_circles = True
 random_distractor_target_orientation = True
 
-path_for_mit_icons = "/home/janek/psychologia/MIT_MOT_experiment/icons_mit/icons"
-results_dir = "/home/janek/psychologia/MIT_MOT_experiment/results/"
-#path_for_mit_icons = r"C:/Users/janns/Desktop/psychologia/MIT_MOT_experiment/icons_mit/icons"
-#results_dir = r"C:/Users/janns/Desktop/psychologia/MIT_MOT_experiment/results/"
+#path_for_mit_icons = "/home/janek/psychologia/MIT_MOT_experiment/icons_mit/icons"
+#results_dir = "/home/janek/psychologia/MIT_MOT_experiment/results/"
+path_for_mit_icons = r"D:\Desktop\MIT_MOT_experiment/icons_mit/icons"
+results_dir = r"D:\Desktop\MIT_MOT_experiment/results/"
 img_mode = True
 
 def model_inference(path_to_experiment):
@@ -124,6 +125,7 @@ def model_inference3D(path_to_experiment):
 
 if __name__ == '__main__':
     experiment = Experiment(win_size = win_size, full_size = full_size, results_dir = results_dir)
+    experiment.set_mouse_visibility(mouse_visible)
     experiment.upload_param(
     show_circles=show_circles, 
     circle_radius=circle_radius, 

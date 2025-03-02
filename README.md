@@ -1,6 +1,14 @@
+URUCHOMIENIE:
+W terminalu CMD wpisać kolejno komendy:
+cd  D:\Desktop\MIT_MOT_experiment
+D:
+mitmot\Scripts\activate
+python run.py
+............
+
+
+uv pip install pip
 uv pip install chumpy --no-build-isolation
-
-
 
 /home/janek/miniconda3/envs/bundesliga/bin/python3 /home/janek/numlabs/repozytoria/ext_2024_MOT_and_pose_research/inferencer_demo.py --input webcam --output x.mp4
 
