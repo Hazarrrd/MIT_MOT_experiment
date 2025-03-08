@@ -28,11 +28,11 @@ class MIT(Trial):
 
     def __init__(self, *args):
         super().__init__(*args)
-        self.black_path, self.png_files = MIT.get_png_files(self.path_for_mit_icons)
+        self.black_path, self.png_files = MIT.get_png_files(self.path_for_mit_icons, self.snowflakes_id_to_use)
 
     # Function to get list of PNG file paths in a folder
     @staticmethod
-    def get_png_files(folder_path):
+    def get_png_files(folder_path, snowflakes_id_to_use):
         # List to store full paths of PNG files
         png_files = []
         
@@ -44,7 +44,7 @@ class MIT(Trial):
                 full_path = os.path.join(folder_path, filename)
                 if 'black' in filename:
                     black_path = full_path
-                else:
+                elif filename.lower()[:-4] in snowflakes_id_to_use:
                     png_files.append(full_path)
         random.shuffle(png_files)
         return black_path, png_files
@@ -127,6 +127,11 @@ class MIT(Trial):
             if self.show_trial_results and success != -1:
                 self.show_results_window(ground_truth, choice, success)
         else:
+            if self.img_mode:
+                self.uncover_objects()
+            else:
+                self.uncover_objects_circle()
+                
             success = -1
         self.new_row_df['Task_time_identification']= task_time_identification
         if success in [1,0]:

@@ -17,7 +17,7 @@ import ctypes
 class Trial():
     def __init__(self, win, show_circles, circle_radius, small_circle_radius, obj_radius, hz_target, hz_circle, instruction_1, instruction_2, instruction_2_MIT, fps,
                 random_direction_small_circles, random_direction_big_circle, random_offset_target_distractor, random_offset_circles, random_distractor_target_orientation,
-                observation_time,tracking_time, guessing_time, direction_changes, direction_changes_motoric, change_big_direction, show_trial_results, path_for_mit_icons, img_mode, 
+                observation_time,tracking_time, guessing_time, direction_changes, direction_changes_motoric, change_big_direction, show_trial_results, path_for_mit_icons, snowflakes_id_to_use, img_mode, 
                 motoric_radius, motoric_circle_radius, hz_motoric, answer_1_time_limit, answer_MIT_time_limit, motor_task_time_limit, is_windows_OS, dir_name, df, form):
         self.is_windows_OS = is_windows_OS
         self.form = form
@@ -51,6 +51,7 @@ class Trial():
         self.frame_duration = 1.0 / fps  # Duration of each frame in seconds
         self.img_mode = img_mode
         self.path_for_mit_icons = path_for_mit_icons
+        self.snowflakes_id_to_use = snowflakes_id_to_use
         self.dir_name = dir_name
 
         self.motoric_radius = motoric_radius

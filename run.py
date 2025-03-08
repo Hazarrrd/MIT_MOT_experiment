@@ -11,7 +11,6 @@ import random
 
 ##TODO
 ## ogarnij skalowanie rzecywistosc - piksel
-## podmien sniezki
 ## ogarnij prezentacke kamerki na dzien mozgu
 ## wstaw dobre liczby do eksperymentu
 
@@ -30,7 +29,7 @@ do_inference_after = False
 mouse_visible = True
 fps = 60
 
-training_trials_per_block = 0 #12
+training_trials_per_block = 5 #12
 trials_per_block = 1 
 block_pairs_number = 3
 target_circles_ammount_settups = [[2,5]] ##[X,Y] X - number of targets, Y - number of circles
@@ -55,6 +54,8 @@ guessing_time = 3  # seconds  ##Marking time
 #pass direction_changes = [] in order to skip directions changes
 direction_changes = [[1,tracking_time]]   
 change_big_direction = False
+snowflakes_id_to_use = ['1','3','5','25','2','9','7','8','18','19','11','28'] 
+#snowflakes_id_to_use = ['brazil','canada','china','france','germany','japan','south-korea','switzerland','turkey','united-kingdom']
 
 answer_1_time_limit = 3
 answer_MIT_time_limit = 5 
@@ -64,22 +65,23 @@ motor_task_time_limit = 10
 #pass direction_changes_motoric = [] in order to skip directions changes
 direction_changes_motoric = [[1,motor_task_time_limit]]
 
+
 instruction_main_mot = f"INSTRUKCJA \n \n \n Za chwilę zostanie Ci przedstawiona gra która polega na uwagowym śledzeniu poruszających się obiektów. Każda próba będzie zaczynała się gdy naciśniesz klawisz 'w dół' – trzymaj na nim palec do momentu, który zostanie opisany w dalszej części instrukcji.\n \n \
 Na początku każdej próby zobaczysz na ekranie losowo rozmieszczone czarne koła. Część z nich zostanie oznaczona zieloną obwódką jako cele. Należy zapamiętać, które koła są celami, ponieważ oznaczenie po krótkiej chwili zniknie i wszystkie czarne koła zaczną się poruszać w dość losowy sposób. Podczas gdy czarne koła poruszają się, staraj się śledzić te, które zostały oznaczone jako cele. Po kilku sekundach wszystkie koła zatrzymają się i jedno losowo wybrane koło zostanie oznaczone niebieską obwódką. Po krótkiej chwili koła znikną. \
 Następnie pojawi się zadanie w którym należy: zwolnić naciskany palcem klawisz i tym palcem dotknąć środka czarnego koła, które będzie się poruszało po ekranie. Środek koła został oznaczony białym znakiem +. Nie zwlekaj zbyt z długo z odpowiedzią.  Gdy wykonujesz ruch staraj się by był jak najbardziej pewny, prosty. Gdy wykonasz zadanie wróć palec na klawisz.   \
 Następie na ekranie zobaczysz dwa koła: zielone i czerwone. Jeżeli uważasz, że oznaczone niebieską obwódką czarne koło było celem – należy wybrać zielone koło; jeżeli uważasz, że oznaczone niebieską obwódką czarne koło nie było celem, wybierz czerwone koło. Żeby wybrać koło (zielone lub czerwone) należy zwolnić klawisz i dotknąć koła na ekranie palcem, którym wcześniej naciskało się klawisz. Gdy udzielisz odpowiedzi i ponownie naciśniesz klawisz rozpocznie się kolejna próba. \n \n \
 Będzie {training_trials_per_block} prób, podczas których nauczysz się wykonywać zadanie. Po treningu rozpoczną się próby właściwe. \n \
-Jeśli masz jakieś pytania lub wątpliwości, możesz zgłosić je teraz osobie prowadzącej. Jeżeli nie, wciśnij klawisz, aby przejść dalej."
+Jeśli masz jakieś pytania lub wątpliwości, możesz zgłosić je teraz osobie prowadzącej. Jeżeli nie, wciśnij klawisz 'w dół', aby przejść dalej."
 
-instruction_main_mit = f"INSTRUKCJA \n \n \n  Za chwilę zostanie Ci przedstawiona gra która polega na uwagowym śledzeniu poruszających się obiektów. Każda próba będzie zaczynała się gdy naciśniesz klawisz – przy każdej próbie trzymaj na nim palec do momentu, który zostanie opisany w dalszej części instrukcji. \n \n \
+instruction_main_mit = f"INSTRUKCJA \n \n \n  Za chwilę zostanie Ci przedstawiona gra która polega na uwagowym śledzeniu poruszających się obiektów. Każda próba będzie zaczynała się gdy naciśniesz klawisz 'w dół' – przy każdej próbie trzymaj na nim palec do momentu, który zostanie opisany w dalszej części instrukcji. \n \n \
 Na początku każdej próby zobaczysz losowo rozmieszczone figury, które przypominają płatki śniegu. Część z nich zostanie oznaczona zieloną obwódką jako cele. Należy zapamiętać, które płatki śniegu są celami, ponieważ oznaczenie po krótkiej chwili zniknie i wszystkie płatki śniegu zaczną się poruszać w dość losowy sposób. Podczas gdy płatki śniegu poruszają się, staraj się śledzić te, które zostały oznaczone jako cele.  Po kilku sekundach wszystkie płatki zatrzymają się i zostaną ukryte pod czarnymi kołami, a jeden z nich zostanie oznaczony niebieską obwódką.  Po krótkiej chwili koła znikną. \
 Następnie pojawi się zadanie w którym należy: zwolnić naciskany palcem klawisz i tym palcem dotknąć środka czarnego koła, które będzie się poruszało po ekranie. Środek koła został oznaczony białym znakiem +. Nie zwlekaj zbyt z długo z odpowiedzią.  Gdy wykonujesz ruch staraj się by był jak najbardziej pewny, prosty. Gdy wykonasz zadanie wróć palec na klawisz. \
 Następie na ekranie zobaczysz dwa koła: zielone i czerwone. Jeżeli uważasz, że oznaczony niebieską obwódką płatek śniegu ukryty pod czarnym kołem był celem – należy wybrać zielone koło; jeżeli uważasz, że oznaczony niebieską obwódką płatek śniegu ukryty pod czarnym kołem nie był celem, wybierz czerwone koło.  Żeby wybrać koło (zielone lub czerwone) należy zwolnić klawisz i dotknąć koła na ekranie palcem, którym wcześniej naciskało się klawisz.  Po wyborze wróć palec na klawisz.\
 Jako ostatnie zadanie na ekranie pojawią się rozmieszczone w okręgu płatki śniegu, które wcześniej poruszały się po ekranie. Jeżeli uważasz, że oznaczone niebieską obwódką koło kryło płatek śniegu będący celem, zwolnij klawisz i dotknij palcem jego odpowiednik na ekranie. Jeżeli uważasz, że oznaczone niebieską obwódką czarne koło kryło płatek śniegu, który nie był celem, wybierz czerwone koło. Gdy udzielisz odpowiedzi i ponownie naciśniesz klawisz rozpocznie się kolejna próba. \n \n \
 Będzie {training_trials_per_block} prób, podczas których nauczysz się wykonywać zadanie. Po treningu rozpoczną się próby właściwe. \n \
-Jeśli masz jakieś pytania lub wątpliwości, możesz zgłosić je teraz osobie prowadzącej. Jeżeli nie, wciśnij klawisz, aby przejść dalej."
+Jeśli masz jakieś pytania lub wątpliwości, możesz zgłosić je teraz osobie prowadzącej. Jeżeli nie, wciśnij klawisz 'w dół', aby przejść dalej."
 
-info_about_experiment_start = f"Koniec bloku treningowego. Rozpoczynamy badanie. Wciśnij klawisz, aby przejść dalej"
+info_about_experiment_start = f"Koniec bloku treningowego. Rozpoczynamy badanie. Wciśnij klawisz 'w dół', aby przejść dalej"
 info_experiment_end = f"Koniec badania. Dziękujemy za udział."
 instruction_1 = "Wciśnij przycisk 'w dół', aby rozpocząć następną próbę i trzymaj go naciśnięty do momentu zadania z ruchomym czarnym kołem."
 instruction_2 = "The object was {ground_truth}. The user chose {choice}."
@@ -154,6 +156,7 @@ if __name__ == '__main__':
     change_big_direction=change_big_direction, 
     show_trial_results=show_trial_results, 
     path_for_mit_icons=path_for_mit_icons, 
+    snowflakes_id_to_use=snowflakes_id_to_use,
     img_mode=img_mode, 
     motoric_radius=motoric_radius, 
     motoric_circle_radius=motoric_circle_radius, 
@@ -166,7 +169,7 @@ if __name__ == '__main__':
     experiment.initialize_mot()
     experiment.initialize_mit()
     
-    block_type_list = ["MOT", "MIT"]
+    block_type_list = ["MIT", "MIT"]
     random.shuffle(block_type_list)
     
     if training_trials_per_block > 0:

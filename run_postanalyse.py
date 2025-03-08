@@ -8,7 +8,8 @@ def model_inference(path_to_experiment):
     # Build ffmpeg command
     #/home/janek/miniconda3/envs/bundesliga/bin/python3 /home/janek/numlabs/repozytoria/ext_2024_MOT_and_pose_research/inferencer_demo.py --input webcam --output x.mp4
     ### ffmpeg -i MOT2.mp4 -c:v libx264 -preset ultrafast -crf 30 -c:a aac -b:a 128k MOT22.mp4 COMPRESS
-    input_path = Path(os.path.join(path_to_experiment,'videos', 'MIT_block_1_trial1.avi'))
+    
+    input_path = Path(os.path.join(path_to_experiment,'videos'))
     if input_path.is_dir():
         inputs = input_path.glob("*.*")
     else:
@@ -64,11 +65,12 @@ def model_inference3D_win(path_to_experiment):
         process = subprocess.Popen(command, shell=True)
         process.wait()
 
-experiment = r"C:\Users\janns\Desktop\psychologia\MIT_MOT_experiment\results\experiment_2025-02-16-15-23-31"
+#experiment = r"C:\Users\janns\Desktop\psychologia\MIT_MOT_experiment\results\experiment_2025-02-16-15-23-31"
+experiment = "/home/janek/Downloads/Nagrania-20250304T165450Z-001/Nagrania"
 experiment_path = Path(experiment)
 
 model_inference(experiment)
-#model_inference3D(experiment)
+model_inference3D(experiment)
 # Get all video files in the "videos" folder
 #for filename in glob.glob(str(experiment_path / "videos" / "*")):
 #    get_metrics(experiment, Path(filename).stem)
