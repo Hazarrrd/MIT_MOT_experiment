@@ -18,7 +18,8 @@ class Trial():
     def __init__(self, win, show_circles, circle_radius, small_circle_radius, obj_radius, hz_target, hz_circle, instruction_1, instruction_2, instruction_2_MIT, fps,
                 random_direction_small_circles, random_direction_big_circle, random_offset_target_distractor, random_offset_circles, random_distractor_target_orientation,
                 observation_time,tracking_time, guessing_time, direction_changes, direction_changes_motoric, change_big_direction, show_trial_results, path_for_mit_icons, img_mode, 
-                motoric_radius, motoric_circle_radius, hz_motoric, answer_1_time_limit, answer_MIT_time_limit, motor_task_time_limit, dir_name, df, form):
+                motoric_radius, motoric_circle_radius, hz_motoric, answer_1_time_limit, answer_MIT_time_limit, motor_task_time_limit, is_windows_OS, dir_name, df, form):
+        self.is_windows_OS = is_windows_OS
         self.form = form
         self.motoric_movement_start = -1
         self.win = win
@@ -229,7 +230,11 @@ class Trial():
 
         video_filename = os.path.join(os.path.join(self.dir_name,"videos"), f"{self.__class__.__name__}_block_{self.block_id}_trial{self.trial_id}")
         self.motoric_movement_start = -1
-        cap=cv2.VideoCapture(0, cv2.CAP_DSHOW)
+        if self.is_windows_OS:
+            cap=cv2.VideoCapture(0, cv2.CAP_DSHOW)
+        else:
+            cap=cv2.VideoCapture(0)
+            
         self.camera_is_recording = False
         if cap and cap.isOpened():
             self.camera_is_recording = True

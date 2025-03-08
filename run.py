@@ -11,8 +11,8 @@ import random
 
 ##TODO
 ## ogarnij skalowanie rzecywistosc - piksel
-## deploy na komp w labbie
 ## podmien sniezki
+## ogarnij prezentacke kamerki na dzien mozgu
 ## wstaw dobre liczby do eksperymentu
 
 ##DO OBGADANIA!
@@ -22,6 +22,7 @@ import random
 #win_size = [2560, 1440] 
 win_size = [1280, 1024]
 #win_size = [1920, 1080] ##should be set accordingly to monitor resolution even when FULL_SIZE!!!
+is_windows_OS = False
 full_size = False
 show_circles = True
 show_trial_results = True
@@ -90,10 +91,13 @@ random_offset_target_distractor = True
 random_offset_circles = True
 random_distractor_target_orientation = True
 
-#path_for_mit_icons = "/home/janek/psychologia/MIT_MOT_experiment/icons_mit/icons"
-#results_dir = "/home/janek/psychologia/MIT_MOT_experiment/results/"
-path_for_mit_icons = r"D:\Desktop\MIT_MOT_experiment/icons_mit/icons"
-results_dir = r"D:\Desktop\MIT_MOT_experiment/results/"
+if is_windows_OS:
+    path_for_mit_icons = r"D:\Desktop\MIT_MOT_experiment/icons_mit/icons_snowflakes"
+    results_dir = r"D:\Desktop\MIT_MOT_experiment/results/"
+else:
+    path_for_mit_icons = "/home/janek/psychologia/MIT_MOT_experiment/icons_mit/icons_snowflakes"
+    results_dir = "/home/janek/psychologia/MIT_MOT_experiment/results/"
+    
 img_mode = True
 
 def model_inference(path_to_experiment):
@@ -156,7 +160,8 @@ if __name__ == '__main__':
     hz_motoric=hz_motoric, 
     answer_1_time_limit=answer_1_time_limit, 
     answer_MIT_time_limit=answer_MIT_time_limit, 
-    motor_task_time_limit=motor_task_time_limit
+    motor_task_time_limit=motor_task_time_limit,
+    is_windows_OS=is_windows_OS
 )
     experiment.initialize_mot()
     experiment.initialize_mit()
