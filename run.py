@@ -18,6 +18,7 @@ import random
 # case dla np. 2 MOT/MIT i guess pojawia się kompletnie gdzie indziej, bardzo łatwo, czy zmienic zeby tylko sąsiad był wybierany?
 # parametry do eksperymentu ustawienie
 # setup fizyczny eksperymentu, kamera, monitor, krzeslo, biurko, klawiatura, ustawienie reki
+# sniezynki - zrobilismy błąd że robilismy głosowanie na pojedyczne sniezki, a nie zestawy ze stałą różnicą odległości
 
 ##### CONFIGURATION:
 #win_size = [2560, 1440] 
