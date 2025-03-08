@@ -12,10 +12,12 @@ import random
 ##TODO
 ## ogarnij skalowanie rzecywistosc - piksel
 ## ogarnij prezentacke kamerki na dzien mozgu
-## wstaw dobre liczby do eksperymentu
+## ogarnij readme
 
 ##DO OBGADANIA!
 # case dla np. 2 MOT/MIT i guess pojawia się kompletnie gdzie indziej, bardzo łatwo, czy zmienic zeby tylko sąsiad był wybierany?
+# parametry do eksperymentu ustawienie
+# setup fizyczny eksperymentu, kamera, monitor, krzeslo, biurko, klawiatura, ustawienie reki
 
 ##### CONFIGURATION:
 #win_size = [2560, 1440] 
