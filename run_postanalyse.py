@@ -66,11 +66,11 @@ def model_inference3D_win(path_to_experiment):
         process.wait()
 
 #experiment = r"C:\Users\janns\Desktop\psychologia\MIT_MOT_experiment\results\experiment_2025-02-16-15-23-31"
-experiment = "/home/janek/Downloads/Nagrania-20250304T165450Z-001/Nagrania"
+experiment = "/home/janek/psychologia/MIT_MOT_experiment/results/experiment_2025-03-08-18-00-32_TEST/"
 experiment_path = Path(experiment)
 
-model_inference(experiment)
-model_inference3D(experiment)
+#model_inference(experiment)
+#model_inference3D(experiment)
 # Get all video files in the "videos" folder
-#for filename in glob.glob(str(experiment_path / "videos" / "*")):
-#    get_metrics(experiment, Path(filename).stem)
+for filename in glob.glob(str(experiment_path / "videos" / "*")):
+    get_metrics(experiment, Path(filename).stem)

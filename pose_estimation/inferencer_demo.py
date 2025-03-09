@@ -23,17 +23,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--input", "-i", type=pathlib.Path, help="Input video path or folder path.", required=True)
     parser.add_argument("--output", "-o", type=pathlib.Path, help="Output save dir", required=True)
     parser.add_argument("--compress", "-c", action="store_true", help="True if script should compress output video")
+    parser.add_argument("--show", "-s", action="store_true", help="Show isntead save video")
 
     return parser.parse_args()
 
 def get_predictions(
-    input_path: pathlib.Path, output_path: pathlib.Path, model_str="rtmpose-l", compress: bool = False, inferencer = None, out_filename_sufix = ""
+    input_path: pathlib.Path, output_path: pathlib.Path, model_str="rtmpose-l", compress: bool = False, inferencer = None, show = False, out_filename_sufix = ""
 ) -> None:
-    output_path.mkdir(parents=True, exist_ok=True)
-    if not inferencer:
+    #if not inferencer:
        # inferencer = MMPoseInferencer(pose2d=model_str)
        #MMPoseInferencer("rtmw-x_8xb704-270e_cocktail14-256x192") 
-       inferencer = MMPoseInferencer("rtmw-x_8xb320-270e_cocktail14-384x288") 
+     #   inferencer = MMPoseInferencer("rtmw-x_8xb320-270e_cocktail14-384x288") 
       #  inferencer = MMPoseInferencer(
       #  det_model = "/home/janek/numlabs/repozytoria/ext_2024_MOT_and_pose_research/models/det_models/rtmdet_m_640-8xb32_coco-person.py",
      #   det_weights = "/home/janek/numlabs/repozytoria/ext_2024_MOT_and_pose_research/models/det_models/rtmdet_m_8xb32-100e_coco-obj365-person-235e8209.pth",
@@ -44,10 +44,24 @@ def get_predictions(
     time_start = time.time()
     results = []
     to_test = []
-    for prediction in tqdm(inferencer(inputs=str(input_path),num_instances=1,kpt_thr=0.5, batch_size=16, vis_out_dir=str(output_path), draw_bbox=True, thickness = 1, radius = 1)):
+    if show:
+        output_path = None 
+        vis_dir = None
+        num_instances = -1
+        if not inferencer:
+            inferencer = MMPoseInferencer(pose2d=model_str)
+    else:
+        output_path.mkdir(parents=True, exist_ok=True)
+        vis_dir = str(output_path)
+        num_instances = 1
+        if not inferencer:
+            inferencer = MMPoseInferencer("rtmw-x_8xb320-270e_cocktail14-384x288")
+    for prediction in tqdm(inferencer(inputs=str(input_path),num_instances=num_instances,kpt_thr=0.5, batch_size=16, show=show, vis_out_dir=vis_dir, draw_bbox=True, thickness = 1, radius = 1)):
         for idx,frame_result in enumerate(prediction["predictions"]):
             frame_data = []
             for bb in frame_result:
+                if show:
+                    continue
                 bb_data = {
                         "frame_index": idx,
                         "bounding_box": bb.get("bbox", []),
@@ -109,7 +123,7 @@ def main() -> None:
 
     for input_file in inputs:
         print(f"Processing {input_file}")
-        get_predictions(input_file, args.output, compress=args.compress)
+        get_predictions(input_file, args.output, show = args.show, compress=args.compress)
 
 
 if __name__ == "__main__":

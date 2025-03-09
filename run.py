@@ -9,12 +9,8 @@ import subprocess
 import glob
 import random
 
-##TODO
-## ogarnij skalowanie rzecywistosc - piksel
-## ogarnij prezentacke kamerki na dzien mozgu
-## ogarnij readme
-
 ##DO OBGADANIA!
+# zrobic screna i za kazdym razem wpasowywac dokladnie ten sam kadr! ma byc identyczny, wtedy jedna skala manualna na sztywno ustawiona,w kadrze za każdym taśma która informuje o skali w ruchu płaszczyzny
 # case dla np. 2 MOT/MIT i guess pojawia się kompletnie gdzie indziej, bardzo łatwo, czy zmienic zeby tylko sąsiad był wybierany?
 # parametry do eksperymentu ustawienie
 # setup fizyczny eksperymentu, kamera, monitor, krzeslo, biurko, klawiatura, ustawienie reki

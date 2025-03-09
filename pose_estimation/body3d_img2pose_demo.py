@@ -5,7 +5,7 @@ import os
 import time
 from argparse import ArgumentParser
 from typing import List
-
+from postprocessing.elbow_metric import get_dict_angles, pixel_distance, real_world_distance
 import cv2
 import json_tricks as json
 import mmcv
@@ -209,6 +209,7 @@ def process_one_image(args, detector, frame: np.ndarray, frame_idx: int,
 
         pred_instances = pose_est_result.pred_instances
         keypoints = pred_instances.keypoints
+       # print(keypoints)
         keypoint_scores = pred_instances.keypoint_scores
         if keypoint_scores.ndim == 3:
             keypoint_scores = np.squeeze(keypoint_scores, axis=1)
@@ -216,6 +217,7 @@ def process_one_image(args, detector, frame: np.ndarray, frame_idx: int,
                 idx].pred_instances.keypoint_scores = keypoint_scores
         if keypoints.ndim == 4:
             keypoints = np.squeeze(keypoints, axis=1)
+        
 
         keypoints = -keypoints[..., [0, 2, 1]]
 
@@ -225,7 +227,6 @@ def process_one_image(args, detector, frame: np.ndarray, frame_idx: int,
                 keypoints[..., 2], axis=-1, keepdims=True)
 
         pose_est_results[idx].pred_instances.keypoints = keypoints
-
     pose_est_results = sorted(
         pose_est_results, key=lambda x: x.get('track_id', 1e4))
 
@@ -234,7 +235,7 @@ def process_one_image(args, detector, frame: np.ndarray, frame_idx: int,
 
     if args.num_instances < 0:
         args.num_instances = len(pose_est_results)
-
+   # print(get_dict_angles(pose_est_results))
     # Visualization
     if visualizer is not None:
         visualizer.add_datasample(
@@ -333,7 +334,6 @@ def main():
             next_id=0,
             visualize_frame=frame,
             visualizer=visualizer)
-
         if args.save_predictions:
             # save prediction results
             pred_instances_list = split_instances(pred_3d_instances)
@@ -389,10 +389,40 @@ def main():
                 pred_instances_list.append(
                     dict(
                         frame_id=frame_idx,
-                        instances=split_instances(pred_3d_instances)))
+                        instances=split_instances(pred_3d_instances),
+                        keypoints_2d=np.array(pred_3d_instances["transformed_keypoints"])
+                        )
+                )
 
+            def visualise_staff(pred_3d_instances, frame_vis):
+                if args.show:
+                    keypoints = np.array(pred_3d_instances["transformed_keypoints"][0])
+                    str_print = f""
+                    offset = 0
+                    for key,val in get_dict_angles(keypoints).items():
+                        if key in ["angle_elbow_2d", "angle_chip_2d"]:
+                            if not np.isnan(val):
+                                try:
+                                    str_print += (f" || {key}: {int(val)} || ")
+                                    cv2.putText(frame_vis, f"{key}: {val:.2f}deg", (50+offset, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 0), 2)
+                                    offset += 450
+                                except ValueError:
+                                    pass
+                    p1 = keypoints[8] ## elbow
+                    p2 = keypoints[10] ##wrist
+                    p3 = keypoints[6]  ##arm
+                    p4 = [524,128]
+                    print(p2)
+                    SCALE= pixel_distance(p1,p2) / 25
+                    str_print += (f" || elbow_wrist_dist_pix: {int(pixel_distance(p1,p2))} || wrist_monitor_dist: {int(real_world_distance(p2, p4,SCALE))} ")
+                    print(str_print)
+                    cv2.putText(frame_vis, f"elbow_wrist_dist_pix:: {pixel_distance(p1,p2):.2f}px", (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 0), 2)
+                    offset+=50
+                    cv2.putText(frame_vis, f"wrist_screen_dist:: {real_world_distance(p2, p4,SCALE):.2f}cm", (500, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 0), 2)
+                  
+            frame_vis = visualizer.get_image()
             if save_output:
-                frame_vis = visualizer.get_image()
+             #   visualise_staff(pred_3d_instances, frame_vis)  
                 if video_writer is None:
                     # the size of the image with visualization may vary
                     # depending on the presence of heatmaps
@@ -403,7 +433,9 @@ def main():
 
             if args.show:
                 # press ESC to exit
+                visualise_staff(pred_3d_instances, frame_vis)  
                 frame_vis = visualizer.get_image()
+                    
                 cv2.imshow('Visualization', frame_vis)
                 if cv2.waitKey(5) & 0xFF == 27:
                     break
@@ -423,7 +455,8 @@ def main():
             json.dump(
                 dict(
                     meta_info=pose_estimator.dataset_meta,
-                    instance_info=pred_instances_list),
+                    instance_info=pred_instances_list,
+                    keypoints_2d=np.array(pred_3d_instances["transformed_keypoints"])),
                 f,
                 indent='\t')
         print(f'predictions have been saved at {args.pred_save_path}')
