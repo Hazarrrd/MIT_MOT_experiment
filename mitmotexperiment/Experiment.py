@@ -13,11 +13,21 @@ import random
 class Experiment():
     def __init__(self, win_size = (800,800), full_size = True, results_dir = None):
         # Create the Window
-        self.win = visual.Window(win_size, fullscr=full_size, color="gray", units="pix")
+        self.win = visual.Window(win_size, fullscr=False, color="gray", units="pix")
+    #    event.globalKeys.add(key='q', func=self.escape_handler)
+       # self.win.winHandle.set_fullscreen(False)
+       # self.win.winHandle.minimize()
         self.win.flip()
         self.form = ParticipantForm(self.win)
         self.form.show_form()
-        event.globalKeys.add(key='escape', func=self.escape_handler)
+        self.win.close()
+        self.win = visual.Window(win_size, fullscr=full_size, color="gray", units="pix")
+        event.globalKeys.add(key='q', func=self.escape_handler)
+      #  self.win.winHandle.maximize()
+      #  self.win.winHandle.activate()
+      #  self.win.fullscr = full_size
+      #  self.win.winHandle.set_fullscreen(full_size)
+        self.win.flip()
         self.block_id = 0
         
         # Generate a unique directory name with the current timestamp
@@ -94,7 +104,7 @@ class Experiment():
         # Wait for the duration or until a key is pressed
         while True:
             keys = event.getKeys()
-            if 'down' in keys:
+            if 'down' in keys or '4' in keys:
                 break
     
     def upload_param(self, **kwargs):
@@ -107,6 +117,7 @@ class Experiment():
         print(f"Parameters saved to {json_file_path}")
 
     def escape_handler(self):
+        self.win.close()
         core.quit()
 
     def initialize_mit(self):

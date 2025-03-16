@@ -254,7 +254,7 @@ class Trial():
         
         self.kb.clock.reset()  # when you want to start the timer from
         keys = self.kb.getKeys( waitRelease=False)
-        if len(keys)==1 and keys[0].value == "down":
+        if len(keys)==1 and (keys[0].value == "down" or keys[0].value == "4"):
             task_time = 0
             start_time = core.getTime()
             actual_time = start_time
