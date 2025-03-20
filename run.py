@@ -21,10 +21,10 @@ import random
 
 ##### CONFIGURATION:
 #win_size = [2560, 1440] 
-#win_size = [1280, 1024]
-win_size = [1920, 1080] ##should be set accordingly to monitor resolution even when FULL_SIZE!!!
+win_size = [1280, 1024]
+#win_size = [1920, 1080] ##should be set accordingly to monitor resolution even when FULL_SIZE!!!
 is_windows_OS = True
-full_size = False
+full_size = True
 show_circles = True
 show_trial_results = True
 do_inference_after = False
