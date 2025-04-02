@@ -9,9 +9,6 @@ import subprocess
 import glob
 import random
 
-### Wyjscie dzialajce na escape / Q bo teraz nie działa
-### problem ekranu dotykowego
-
 # ##DO OBGADANIA!
 # zrobic screna i za kazdym razem wpasowywac dokladnie ten sam kadr! ma byc identyczny, wtedy jedna skala manualna na sztywno ustawiona,w kadrze za każdym taśma która informuje o skali w ruchu płaszczyzny
 # case dla np. 2 MOT/MIT i guess pojawia się kompletnie gdzie indziej, bardzo łatwo, czy zmienic zeby tylko sąsiad był wybierany?
@@ -56,7 +53,12 @@ guessing_time = 3  # seconds  ##Marking time
 #pass direction_changes = [] in order to skip directions changes
 direction_changes = [[1,tracking_time]]   
 change_big_direction = False
-snowflakes_id_to_use = ['1','3','5','25','2','9','7','8','18','19','11','28'] 
+mit_objects_folder = "icons_shapes_c"
+snowflakes_id_to_use = [str(i+1)+"a" for i in range(0,11)]
+snowflakes_id_to_use.extend([str(i+1)+"b" for i in range(0,11)])
+#print(snowflakes_id_to_use)
+#snowflakes_id_to_use.extend([f"{i+1}_negative" for i in range(0,16)]) 
+#snowflakes_id_to_use = ['1','3','5','25','2','9','7','8','18','19','11','28'] 
 #snowflakes_id_to_use = ['brazil','canada','china','france','germany','japan','south-korea','switzerland','turkey','united-kingdom']
 
 answer_1_time_limit = 3
@@ -96,10 +98,10 @@ random_offset_circles = True
 random_distractor_target_orientation = True
 
 if is_windows_OS:
-    path_for_mit_icons = r"D:\Desktop\MIT_MOT_experiment/icons_mit/icons_snowflakes"
+    path_for_mit_icons = r"D:\Desktop\MIT_MOT_experiment/icons_mit/" + mit_objects_folder
     results_dir = r"D:\Desktop\MIT_MOT_experiment/results/"
 else:
-    path_for_mit_icons = "/home/janek/psychologia/MIT_MOT_experiment/icons_mit/icons_snowflakes"
+    path_for_mit_icons = "/home/janek/psychologia/MIT_MOT_experiment/icons_mit/" + mit_objects_folder
     results_dir = "/home/janek/psychologia/MIT_MOT_experiment/results/"
     
 img_mode = True
@@ -171,7 +173,7 @@ if __name__ == '__main__':
     experiment.initialize_mot()
     experiment.initialize_mit()
     
-    block_type_list = ["MIT", "MIT"]
+    block_type_list = ["MIT", "MOT"]
     random.shuffle(block_type_list)
     
     if training_trials_per_block > 0:

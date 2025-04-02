@@ -29,7 +29,7 @@ class MIT(Trial):
     def __init__(self, *args):
         super().__init__(*args)
         self.black_path, self.png_files = MIT.get_png_files(self.path_for_mit_icons, self.snowflakes_id_to_use)
-
+                        
     # Function to get list of PNG file paths in a folder
     @staticmethod
     def get_png_files(folder_path, snowflakes_id_to_use):
@@ -150,6 +150,20 @@ class MIT(Trial):
         
 
     def create_objects(self):
+        if True:
+            new_png_files = []
+            while len(new_png_files) < self.n_targets + self.n_distractors:
+                img_number = os.path.basename(self.png_files.pop(0))[:-5]
+                new_path_a = os.path.join(self.path_for_mit_icons, img_number+'a.png')
+                new_path_b = os.path.join(self.path_for_mit_icons, img_number+'b.png')
+                if new_path_a not in new_png_files:
+                    new_png_files.append(new_path_a)
+                    new_png_files.append(new_path_b)
+            print(new_png_files)
+            random.shuffle(new_png_files)
+            print(new_png_files)
+            self.png_files = new_png_files
+            
         self.targets = [visual.ImageStim(self.win, size=(self.obj_radius*2, self.obj_radius*2), image=self.png_files[i], pos=None) for i in range(self.n_targets)]
         self.distractors = [visual.ImageStim(self.win, size=(self.obj_radius*2, self.obj_radius*2), image=self.png_files[self.n_targets + i], pos=None) for i in range(self.n_distractors)]
         self.small_circles = [visual.Circle(self.win, radius=self.small_circle_radius, lineColor="white", fillColor=None, pos=None) for i in range(self.n_circles)]
