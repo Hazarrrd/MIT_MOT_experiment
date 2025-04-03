@@ -244,7 +244,7 @@ class MIT(Trial):
         else:
             self.uncover_objects_circle()
         multipl_radius = 2
-        distr = visual.Circle(self.win, radius=self.obj_radius*multipl_radius, pos=(0, 0), fillColor='red', lineColor='red')
+        distr = visual.Circle(self.win, radius=self.obj_radius*multipl_radius, pos=(0, 0), fillColor='black', lineColor='black')
         random_order_obj = [distr] + np.random.permutation(self.targets + self.distractors).tolist()
         ## increasing radius for choosing
         for obj in self.targets + self.distractors:

@@ -9,6 +9,11 @@ import subprocess
 import glob
 import random
 
+##
+### ID
+### Wiek
+### Płeć
+
 # ##DO OBGADANIA!
 # zrobic screna i za kazdym razem wpasowywac dokladnie ten sam kadr! ma byc identyczny, wtedy jedna skala manualna na sztywno ustawiona,w kadrze za każdym taśma która informuje o skali w ruchu płaszczyzny
 # case dla np. 2 MOT/MIT i guess pojawia się kompletnie gdzie indziej, bardzo łatwo, czy zmienic zeby tylko sąsiad był wybierany?
@@ -22,16 +27,16 @@ win_size = [1280, 1024]
 #win_size = [1920, 1080] ##should be set accordingly to monitor resolution even when FULL_SIZE!!!
 is_windows_OS = True
 full_size = True
-show_circles = True
+show_circles = False
 show_trial_results = True
 do_inference_after = False
-mouse_visible = True
+mouse_visible = False
 fps = 60
 
-training_trials_per_block = 5 #12
-trials_per_block = 1 
-block_pairs_number = 3
-target_circles_ammount_settups = [[2,5]] ##[X,Y] X - number of targets, Y - number of circles
+training_trials_per_block = 12 #12
+trials_per_block = 54 #54
+block_pairs_number = 2 #2
+target_circles_ammount_settups = [[1,5],[2,5],[3,5]] ##[X,Y] X - number of targets, Y - number of circles
   # Set desired FPS
 
 
@@ -41,13 +46,13 @@ obj_radius = small_circle_radius/3.5
 motoric_radius = obj_radius *3
 motoric_circle_radius = small_circle_radius * 2
 
-hz_target = 0.45 # cycles per second
-hz_circle = 0.1 # cycles per second
-hz_motoric = 0.45
+hz_target = 0.45 # cycles per second #270/360  #0.45
+hz_circle = 0.1 # cycles per second # 
+hz_motoric = 0.35
 
-observation_time = 3
-tracking_time = 3  # seconds
-guessing_time = 3  # seconds  ##Marking time
+observation_time = 1.5
+tracking_time = 6  # seconds
+guessing_time = 1.5  # seconds  ##Marking time
 
 #[[t1,t2],[t3,t4]...] - each circle will change direction two times - in time sampled from t1 <= t <= t2 and in time sampled from t3 <= t <= t4
 #pass direction_changes = [] in order to skip directions changes
@@ -61,8 +66,8 @@ snowflakes_id_to_use.extend([str(i+1)+"b" for i in range(0,11)])
 #snowflakes_id_to_use = ['1','3','5','25','2','9','7','8','18','19','11','28'] 
 #snowflakes_id_to_use = ['brazil','canada','china','france','germany','japan','south-korea','switzerland','turkey','united-kingdom']
 
-answer_1_time_limit = 3
-answer_MIT_time_limit = 5 
+answer_1_time_limit = 4
+answer_MIT_time_limit = 8 
 motor_task_time_limit = 10
 
 #[[t1,t2],[t3,t4]...] - each circle will change direction two times - in time sampled from t1 <= t <= t2 and in time sampled from t3 <= t <= t4
@@ -173,7 +178,7 @@ if __name__ == '__main__':
     experiment.initialize_mot()
     experiment.initialize_mit()
     
-    block_type_list = ["MIT", "MOT"]
+    block_type_list = ["MIT", "MIT"]
     random.shuffle(block_type_list)
     
     if training_trials_per_block > 0:
