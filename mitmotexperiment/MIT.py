@@ -53,10 +53,9 @@ class MIT(Trial):
         super().do_single_trial(block_id, tral_id, is_training)
         current_datetime = datetime.now()
         self.new_row_df = {
-                            'First_name': self.form.form_data["Imię:"],
-                            'Last_name': self.form.form_data["Nazwisko:"],
-                            'Gender': self.form.form_data["Płeć:"],
-                            'Email': self.form.form_data["Email:"],
+                            'ID': self.form.form_data["ID:"],
+                            'Sex': self.form.form_data["Płeć:"],
+                            'Age': self.form.form_data["Wiek:"],
                             'Block': block_id, 
                             'Trial': tral_id, 
                             'Type': 'MIT',
@@ -290,14 +289,25 @@ class MIT(Trial):
     def show_results_window(self, ground_truth, choice, success):
         text_success = ""
         if success==1:
-            text_success = "The object has been identified correctly."
+            text_success = "Cel zidentyfikowany prawidłowo."
         elif success==0:
-            text_success = "The object has been NOT identified correctly."
+            text_success = "Cel NIE został zidentyfikowany prawidłowo."
         elif success==2:
-            text_success = "The object has been identified as distractor."
+            text_success = "Obiekt rozpraszający zidentyfikowany prawidłowo."
         elif success==3:
-            text_success = "The object has been WRONGLY identified as distractor."
-        result_text = self.instruction_2_MIT.format(ground_truth=ground_truth, choice=choice, identificiation = text_success)
+            text_success = "Cel NIE został zidentyfikowany prawidłowo, błędnie wybrano obiekt rozpraszający."
+            
+        if ground_truth == "distractor":
+            ground_truth_polish = "obiekt rozpraszający"
+        else:
+            ground_truth_polish = "cel"
+        if choice == "distractor":
+            choice_polish = "obiekt rozpraszający"
+        else:
+            choice_polish = "cel"
+            
+        ground_truth_polish 
+        result_text = self.instruction_2_MIT.format(ground_truth=ground_truth_polish, choice=choice_polish, identificiation = text_success)
         result_msg = visual.TextStim(self.win, text=result_text, color="black")
         result_msg.draw()
         self.win.flip()

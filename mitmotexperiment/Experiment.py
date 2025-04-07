@@ -45,10 +45,9 @@ class Experiment():
      
         # Define data
         data = {
-            'First_name': [],
-            'Last_name': [],
-            'Gender': [],
-            'Email': [],
+            'ID': [],
+            'Sex': [],
+            'Age': [],
             'Block': [],
             'Trial': [],
             'Type': [],

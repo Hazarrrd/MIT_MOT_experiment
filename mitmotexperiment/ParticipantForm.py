@@ -11,10 +11,9 @@ class ParticipantForm:
             # Create a GUI form
             form = gui.Dlg(title="Dane uczestnika")
             form.addText("Wprowadź swoje dane:")
-            form.addField("Email:", "", required=True)  # Pre-fill email
-            form.addField("Płeć:", choices=["F", "M"], required=True)  # Drop-down menu instead of text
-            form.addField("Imię:", "", required=True)  # Pre-fill first name
-            form.addField("Nazwisko:", "", required=True)  # Pre-fill last name
+            form.addField("ID:", "", required=True)  # Pre-fill email
+            form.addField("Płeć:", choices=["Nie chcę podawać", "Kobieta", "Mężczyzna"], required=True)  # Drop-down menu instead of text
+            form.addField("Wiek:", "", required=True)  # Pre-fill email
 
             # Show the form
             self.form_data = form.show()

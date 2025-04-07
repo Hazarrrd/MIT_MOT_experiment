@@ -36,9 +36,8 @@ fps = 60
 training_trials_per_block = 12 #12
 trials_per_block = 54 #54
 block_pairs_number = 2 #2
-target_circles_ammount_settups = [[1,5],[2,5],[3,5]] ##[X,Y] X - number of targets, Y - number of circles
-  # Set desired FPS
-
+target_circles_ammount_settups = {"MIT" : [[1,5],[2,5],[3,5]] , ##[X,Y] X - number of targets, Y - number of circles
+                                  "MOT" : [[2,5],[3,5],[4,5]]} 
 
 circle_radius = win_size[1]*0.28            #340
 small_circle_radius = circle_radius/2.5
@@ -75,26 +74,26 @@ motor_task_time_limit = 10
 direction_changes_motoric = [[1,motor_task_time_limit]]
 
 
-instruction_main_mot = f"INSTRUKCJA \n \n \n Za chwilę zostanie Ci przedstawiona gra która polega na uwagowym śledzeniu poruszających się obiektów. Każda próba będzie zaczynała się gdy naciśniesz klawisz – trzymaj na nim palec do momentu, który zostanie opisany w dalszej części instrukcji.\n \n \
+instruction_main_mot = f"INSTRUKCJA \n \n \n Za chwilę zostanie Ci przedstawiona gra która polega na uwagowym śledzeniu poruszających się obiektów. Każda próba będzie zaczynała się gdy naciśniesz oznaczony klawisz – trzymaj na nim palec do momentu, który zostanie opisany w dalszej części instrukcji.\n \n \
 Na początku każdej próby zobaczysz na ekranie losowo rozmieszczone czarne koła. Część z nich zostanie oznaczona zieloną obwódką jako cele. Należy zapamiętać, które koła są celami, ponieważ oznaczenie po krótkiej chwili zniknie i wszystkie czarne koła zaczną się poruszać w dość losowy sposób. Podczas gdy czarne koła poruszają się, staraj się śledzić te, które zostały oznaczone jako cele. Po kilku sekundach wszystkie koła zatrzymają się i jedno losowo wybrane koło zostanie oznaczone niebieską obwódką. Po krótkiej chwili koła znikną. \
-Następnie pojawi się zadanie w którym należy: zwolnić naciskany palcem klawisz i tym palcem dotknąć środka czarnego koła, które będzie się poruszało po ekranie. Środek koła został oznaczony białym znakiem +. Nie zwlekaj zbyt z długo z odpowiedzią.  Gdy wykonujesz ruch staraj się by był jak najbardziej pewny, prosty. Gdy wykonasz zadanie wróć palec na klawisz.   \
-Następie na ekranie zobaczysz dwa koła: zielone i czerwone. Jeżeli uważasz, że oznaczone niebieską obwódką czarne koło było celem – należy wybrać zielone koło; jeżeli uważasz, że oznaczone niebieską obwódką czarne koło nie było celem, wybierz czerwone koło. Żeby wybrać koło (zielone lub czerwone) należy zwolnić klawisz i dotknąć koła na ekranie palcem, którym wcześniej naciskało się klawisz. Gdy udzielisz odpowiedzi i ponownie naciśniesz klawisz rozpocznie się kolejna próba. \n \n \
+Następnie pojawi się zadanie w którym należy: zwolnić naciskany palcem oznaczony klawisz i tym palcem dotknąć środka czarnego koła, które będzie się poruszało po ekranie. Środek koła został oznaczony białym znakiem +. Nie zwlekaj zbyt z długo z odpowiedzią.  Gdy wykonujesz ruch staraj się by był jak najbardziej pewny, prosty.  \
+Następie na ekranie zobaczysz dwa koła: zielone i czerwone. Jeżeli uważasz, że oznaczone niebieską obwódką czarne koło było celem – należy wybrać zielone koło; jeżeli uważasz, że oznaczone niebieską obwódką czarne koło nie było celem, wybierz czerwone koło. Żeby wybrać koło (zielone lub czerwone) należy dotknąć koła na ekranie palcem, którym wcześniej naciskało się oznaczony klawisz. Gdy udzielisz odpowiedzi i ponownie naciśniesz oznaczony klawisz rozpocznie się kolejna próba. \n \n \
 Będzie {training_trials_per_block} prób, podczas których nauczysz się wykonywać zadanie. Po treningu rozpoczną się próby właściwe. \n \
-Jeśli masz jakieś pytania lub wątpliwości, możesz zgłosić je teraz osobie prowadzącej. Jeżeli nie, wciśnij klawisz, aby przejść dalej."
+Jeśli masz jakieś pytania lub wątpliwości, możesz zgłosić je teraz osobie prowadzącej. Jeżeli nie, wciśnij oznaczony klawisz, aby przejść dalej."
 
-instruction_main_mit = f"INSTRUKCJA \n \n \n  Za chwilę zostanie Ci przedstawiona gra która polega na uwagowym śledzeniu poruszających się obiektów. Każda próba będzie zaczynała się gdy naciśniesz klawisz – przy każdej próbie trzymaj na nim palec do momentu, który zostanie opisany w dalszej części instrukcji. \n \n \
-Na początku każdej próby zobaczysz losowo rozmieszczone figury, które przypominają płatki śniegu. Część z nich zostanie oznaczona zieloną obwódką jako cele. Należy zapamiętać, które płatki śniegu są celami, ponieważ oznaczenie po krótkiej chwili zniknie i wszystkie płatki śniegu zaczną się poruszać w dość losowy sposób. Podczas gdy płatki śniegu poruszają się, staraj się śledzić te, które zostały oznaczone jako cele.  Po kilku sekundach wszystkie płatki zatrzymają się i zostaną ukryte pod czarnymi kołami, a jeden z nich zostanie oznaczony niebieską obwódką.  Po krótkiej chwili koła znikną. \
-Następnie pojawi się zadanie w którym należy: zwolnić naciskany palcem klawisz i tym palcem dotknąć środka czarnego koła, które będzie się poruszało po ekranie. Środek koła został oznaczony białym znakiem +. Nie zwlekaj zbyt z długo z odpowiedzią.  Gdy wykonujesz ruch staraj się by był jak najbardziej pewny, prosty. Gdy wykonasz zadanie wróć palec na klawisz. \
-Następie na ekranie zobaczysz dwa koła: zielone i czerwone. Jeżeli uważasz, że oznaczony niebieską obwódką płatek śniegu ukryty pod czarnym kołem był celem – należy wybrać zielone koło; jeżeli uważasz, że oznaczony niebieską obwódką płatek śniegu ukryty pod czarnym kołem nie był celem, wybierz czerwone koło.  Żeby wybrać koło (zielone lub czerwone) należy zwolnić klawisz i dotknąć koła na ekranie palcem, którym wcześniej naciskało się klawisz.  Po wyborze wróć palec na klawisz.\
-Jako ostatnie zadanie na ekranie pojawią się rozmieszczone w okręgu płatki śniegu, które wcześniej poruszały się po ekranie. Jeżeli uważasz, że oznaczone niebieską obwódką koło kryło płatek śniegu będący celem, zwolnij klawisz i dotknij palcem jego odpowiednik na ekranie. Jeżeli uważasz, że oznaczone niebieską obwódką czarne koło kryło płatek śniegu, który nie był celem, wybierz czerwone koło. Gdy udzielisz odpowiedzi i ponownie naciśniesz klawisz rozpocznie się kolejna próba. \n \n \
+instruction_main_mit = f"INSTRUKCJA \n \n \n  Za chwilę zostanie Ci przedstawiona gra która polega na uwagowym śledzeniu poruszających się obiektów. Każda próba będzie zaczynała się gdy naciśniesz oznaczony klawisz – przy każdej próbie trzymaj na nim palec do momentu, który zostanie opisany w dalszej części instrukcji. \n \n \
+Na początku każdej próby zobaczysz losowo rozmieszczone obiekty. Część z nich zostanie oznaczona zieloną obwódką jako cele. Należy zapamiętać, które obiekty są celami, ponieważ oznaczenie po krótkiej chwili zniknie i wszystkie obiekty zaczną się poruszać w dość losowy sposób. Podczas gdy obiekty poruszają się, staraj się śledzić te, które zostały oznaczone jako cele.  Po kilku sekundach wszystkie obiekty zatrzymają się i zostaną ukryte pod czarnymi kołami, a jeden z nich zostanie oznaczony niebieską obwódką.  Po krótkiej chwili koła znikną. \
+Następnie pojawi się zadanie w którym należy: zwolnić naciskany palcem oznaczony klawisz i tym palcem dotknąć środka czarnego koła, które będzie się poruszało po ekranie. Środek koła został oznaczony białym znakiem +. Nie zwlekaj zbyt z długo z odpowiedzią.  Gdy wykonujesz ruch staraj się by był jak najbardziej pewny, prosty. \
+Następie na ekranie zobaczysz dwa koła: zielone i czerwone. Jeżeli uważasz, że oznaczony niebieską obwódką obiekt ukryty pod czarnym kołem był celem – należy wybrać zielone koło; jeżeli uważasz, że oznaczony niebieską obwódką obiekt ukryty pod czarnym kołem nie był celem, wybierz czerwone koło.  Żeby wybrać koło (zielone lub czerwone) należy dotknąć koła na ekranie palcem, którym wcześniej naciskało się oznaczony klawisz. \
+Jako ostatnie zadanie na ekranie pojawią się rozmieszczone w okręgu obiekty, które wcześniej poruszały się po ekranie. Jeżeli uważasz, że oznaczone niebieską obwódką koło kryło obiekt będący celem, dotknij palcem jego odpowiednik na ekranie. Jeżeli uważasz, że oznaczone niebieską obwódką czarne koło kryło obiekt, który nie był celem, wybierz czarne koło znajdujące się na górnej części okręgu złożonego z obiektów. Gdy udzielisz odpowiedzi i ponownie naciśniesz oznaczony klawisz rozpocznie się kolejna próba. \n \n \
 Będzie {training_trials_per_block} prób, podczas których nauczysz się wykonywać zadanie. Po treningu rozpoczną się próby właściwe. \n \
-Jeśli masz jakieś pytania lub wątpliwości, możesz zgłosić je teraz osobie prowadzącej. Jeżeli nie, wciśnij klawisz', aby przejść dalej."
+Jeśli masz jakieś pytania lub wątpliwości, możesz zgłosić je teraz osobie prowadzącej. Jeżeli nie, wciśnij oznaczony klawisz', aby przejść dalej."
 
-info_about_experiment_start = f"Koniec bloku treningowego. Rozpoczynamy badanie. Wciśnij klawisz, aby przejść dalej"
+info_about_experiment_start = f"Koniec bloku treningowego. Rozpoczynamy badanie. Wciśnij oznaczony klawisz, aby przejść dalej"
 info_experiment_end = f"Koniec badania. Dziękujemy za udział."
 instruction_1 = "Wciśnij przycisk, aby rozpocząć następną próbę i trzymaj go naciśnięty do momentu zadania z ruchomym czarnym kołem."
-instruction_2 = "The object was {ground_truth}. The user chose {choice}."
-instruction_2_MIT = "The object was {ground_truth}. The user chose {choice}. \n {identificiation}"
+instruction_2 = "Oznaczony był {ground_truth}. Badany wybrał {choice}."
+instruction_2_MIT = "Oznaczony był {ground_truth}. Badany wybrał {choice}. \n {identificiation}"
 
 random_direction_small_circles = True
 random_direction_big_circle = True
@@ -178,19 +177,19 @@ if __name__ == '__main__':
     experiment.initialize_mot()
     experiment.initialize_mit()
     
-    block_type_list = ["MIT", "MIT"]
+    block_type_list = ["MIT", "MOT"]
     random.shuffle(block_type_list)
     
     if training_trials_per_block > 0:
         experiment.show_text(instruction_main_mot)
-        experiment.run_block(block_type_list[0],training_trials_per_block,target_circles_ammount_settups, is_training=True)
+        experiment.run_block(block_type_list[0],training_trials_per_block,target_circles_ammount_settups[block_type_list[0]], is_training=True)
         experiment.show_text(instruction_main_mit)
-        experiment.run_block(block_type_list[1],training_trials_per_block,target_circles_ammount_settups, is_training=True)
+        experiment.run_block(block_type_list[1],training_trials_per_block,target_circles_ammount_settups[block_type_list[1]], is_training=True)
     
     experiment.show_text(info_about_experiment_start)
     for i in range(block_pairs_number):
-        experiment.run_block(block_type_list[0],trials_per_block,target_circles_ammount_settups, is_training=False)
-        experiment.run_block(block_type_list[1],trials_per_block,target_circles_ammount_settups, is_training=False)
+        experiment.run_block(block_type_list[0],trials_per_block,target_circles_ammount_settups[block_type_list[0]], is_training=False)
+        experiment.run_block(block_type_list[1],trials_per_block,target_circles_ammount_settups[block_type_list[1]], is_training=False)
     experiment.show_text(info_experiment_end)
     experiment.close()
     if do_inference_after:
