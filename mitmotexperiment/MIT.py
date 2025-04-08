@@ -28,7 +28,6 @@ class MIT(Trial):
 
     def __init__(self, *args):
         super().__init__(*args)
-        self.black_path, self.png_files = MIT.get_png_files(self.path_for_mit_icons, self.snowflakes_id_to_use)
                         
     # Function to get list of PNG file paths in a folder
     @staticmethod
@@ -149,6 +148,7 @@ class MIT(Trial):
         
 
     def create_objects(self):
+        self.black_path, self.png_files = MIT.get_png_files(self.path_for_mit_icons, self.snowflakes_id_to_use)
         if True:
             new_png_files = []
             while len(new_png_files) < self.n_targets + self.n_distractors:
@@ -289,13 +289,13 @@ class MIT(Trial):
     def show_results_window(self, ground_truth, choice, success):
         text_success = ""
         if success==1:
-            text_success = "Cel zidentyfikowany prawidłowo."
+            text_success = "Obiekt zidentyfikowany prawidłowo."
         elif success==0:
-            text_success = "Cel NIE został zidentyfikowany prawidłowo."
+            text_success = "Obiekt NIE został zidentyfikowany prawidłowo."
         elif success==2:
             text_success = "Obiekt rozpraszający zidentyfikowany prawidłowo."
         elif success==3:
-            text_success = "Cel NIE został zidentyfikowany prawidłowo, błędnie wybrano obiekt rozpraszający."
+            text_success = "Obiekt NIE został zidentyfikowany prawidłowo, błędnie wybrano obiekt rozpraszający."
             
         if ground_truth == "distractor":
             ground_truth_polish = "obiekt rozpraszający"

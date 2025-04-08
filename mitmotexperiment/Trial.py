@@ -177,7 +177,6 @@ class Trial():
         start_time = core.getTime()
         actual_time = start_time
         while actual_time - start_time < self.tracking_time:
-            self.win.flip()
             self.update_directions(actual_time - start_time)
             self.update_circles()
             self.update_positions(self.pair_1, self.angles_pair_1, self.speed_objects, self.small_circles, self.small_circle_direction)
@@ -185,7 +184,7 @@ class Trial():
 
             for obj in self.all_objects:
                 obj.draw()
-                
+            self.win.flip()
             frame_elapsed = core.getTime()-actual_time
             if frame_elapsed < self.frame_duration:
                 core.wait(self.frame_duration - frame_elapsed)
