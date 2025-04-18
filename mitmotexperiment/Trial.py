@@ -192,8 +192,7 @@ class Trial():
                 print(f"WARRNING: FPS may be too big {self.fps}, what may cause speed errors")
             actual_time = core.getTime()
 
-    def revealing_guess_object(self):
-        self.win.flip()    
+    def revealing_guess_object(self):   
         for obj in self.all_objects:
             obj.draw()
         to_guess_obj_or_dist = self.targets if np.random.rand() < 0.5 else self.distractors
@@ -211,7 +210,7 @@ class Trial():
                     'ClickX': None,
                     'ClickY': None,
                     'Norm_Euc_Dist': None,
-                    'Task_time': None,
+                    'Task_time_motoric': None,
                     'Movement_start': None,
                     'Movement_duration': None,
                     }
@@ -294,7 +293,7 @@ class Trial():
                 click_pos = mouse.getPos()
             task_data['TargetX'] = objective.pos[0]
             task_data['TargetY'] = objective.pos[1]
-            task_data['Task_time'] = task_time
+            task_data['Task_time_motoric'] = task_time
             if task_time <= self.motor_task_time_limit:
                 task_data['ClickX'] = click_pos[0]
                 task_data['ClickY'] = click_pos[1]
@@ -314,13 +313,12 @@ class Trial():
             print("No key 'left' pressed - failed trial")
             task_data['TargetX'] = -1
             task_data['TargetY'] = -1
-            task_data['Task_time'] = -1
+            task_data['Task_time_motoric'] = -1
             task_data['ClickX'] = -1
             task_data['ClickY'] = -1
             task_data['Movement_start'] = -1
             task_data['Norm_Euc_Dist'] = -1
             task_data['Movement_duration'] = -1
-        self.win.flip()
         self.win.flip()
         if self.camera_is_recording:
             self.camera_is_recording = False

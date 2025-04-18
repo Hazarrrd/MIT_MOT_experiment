@@ -9,19 +9,15 @@ import subprocess
 import glob
 import random
 
-
-### Dodac info o blokach -> walidacja
-### Instrukcja mot/mit - o palcu wskazującym, o różnej ilości targetów -> walidacja
-### sprawdź czy po rozpoczeciu ruchu nie ma duzej przerwy -> walidacja
-### napraw feedback -> do walidacji
-### nie losują się -> do walidacji
+## Distance to target: w kazdej klatce dystans palca wskazujacego do celu
+## W każdej klatce V cm na sekunda
+## Kąty okciowe/ramienia
+## Prędkość zmiany kąta
+## peak velocity pozycje palca
+## 10% pierwszy raz przekroczone 
 
 # ##DO OBGADANIA!
-# zrobic screna i za kazdym razem wpasowywac dokladnie ten sam kadr! ma byc identyczny, wtedy jedna skala manualna na sztywno ustawiona,w kadrze za każdym taśma która informuje o skali w ruchu płaszczyzny
-# case dla np. 2 MOT/MIT i guess pojawia się kompletnie gdzie indziej, bardzo łatwo, czy zmienic zeby tylko sąsiad był wybierany?
-# parametry do eksperymentu ustawienie
-# setup fizyczny eksperymentu, kamera, monitor, krzeslo, biurko, klawiatura, ustawienie reki
-# sniezynki - zrobilismy błąd że robilismy głosowanie na pojedyczne sniezki, a nie zestawy ze stałą różnicą odległości + teraz mamy losowanie 10/12 zamiast 8/12
+# dalej monitor
 
 ##### CONFIGURATION:
 #win_size = [2560, 1440] 
@@ -99,7 +95,7 @@ info_about_experiment_start = f"Koniec bloku treningowego. Rozpoczynamy badanie.
 info_experiment_end = f"Koniec badania. Dziękujemy za udział."
 instruction_1 = "Wciśnij przycisk, aby rozpocząć następną próbę i trzymaj go naciśnięty do momentu zadania z ruchomym czarnym kołem."
 instruction_2 = "Oznaczony był {ground_truth}. Badany wybrał {choice}."
-instruction_2_MIT = "Oznaczony był {ground_truth}. Badany wybrał {choice}. \n {identificiation}"
+instruction_2_MIT = "Zadanie I) Oznaczony był {ground_truth}. Badany wybrał {choice}. \n\n Zadanie II) {identificiation}"
 instruction_before_block = "Blok został zakończony. Możesz odpocząć, jeśli potrzebujesz. Wciśnij przycisk, aby rozpocząć blok zadania "
 random_direction_small_circles = True
 random_direction_big_circle = True
@@ -144,7 +140,7 @@ def model_inference3D(path_to_experiment):
         process.wait()
 
 if __name__ == '__main__':
-    experiment = Experiment(win_size = win_size, full_size = full_size, results_dir = results_dir)
+    experiment = Experiment(win_size = win_size, full_size = full_size, results_dir = results_dir, path_for_mit_icons = path_for_mit_icons, snowflakes_id_to_use = snowflakes_id_to_use)
     experiment.set_mouse_visibility(mouse_visible)
     experiment.upload_param(
     show_circles=show_circles, 
@@ -197,7 +193,7 @@ if __name__ == '__main__':
         if i > 0:
             experiment.show_text(instruction_before_block + block_type_list[0])
         experiment.run_block(block_type_list[0],trials_per_block,target_circles_ammount_settups[block_type_list[0]], is_training=False)
-        experiment.show_text(instruction_before_block + block_type_list[0])
+        experiment.show_text(instruction_before_block + block_type_list[1])
         experiment.run_block(block_type_list[1],trials_per_block,target_circles_ammount_settups[block_type_list[1]], is_training=False)
     experiment.show_text(info_experiment_end)
     experiment.close()

@@ -11,7 +11,7 @@ import json
 import random
 
 class Experiment():
-    def __init__(self, win_size = (800,800), full_size = True, results_dir = None):
+    def __init__(self, win_size = (800,800), full_size = True, results_dir = None, path_for_mit_icons = None, snowflakes_id_to_use = None):
         # Create the Window
         self.win = visual.Window(win_size, fullscr=False, color="gray", units="pix")
     #    event.globalKeys.add(key='q', func=self.escape_handler)
@@ -71,8 +71,13 @@ class Experiment():
             'Movement_start': [],
             'Movement_duration': [],
             "Indicated_img": [],
-            "Img_to_guess": []
+            "Img_to_guess": [],
         }
+        _, png_files = MIT.get_png_files(path_for_mit_icons, snowflakes_id_to_use)
+        png_files = sorted(png_files)
+        for i in range(len(png_files)):
+            data[os.path.basename(png_files[i])] = []
+                
         # Create a DataFrame
         df = pd.DataFrame(data)
         # Save DataFrame to CSV

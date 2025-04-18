@@ -7,6 +7,24 @@ import random
 
 class MOT(Trial):
     
+    @staticmethod
+    def get_png_files(folder_path, snowflakes_id_to_use):
+        # List to store full paths of PNG files
+        png_files = []
+        
+        # Iterate over all files in the folder
+        for filename in os.listdir(folder_path):
+            # Check if the file is a PNG file
+            if filename.lower().endswith(".png"):
+                # Create full path and append to the list
+                full_path = os.path.join(folder_path, filename)
+                if 'black' in filename:
+                    black_path = full_path
+                elif filename.lower()[:-4] in snowflakes_id_to_use:
+                    png_files.append(full_path)
+        random.shuffle(png_files)
+        return black_path, png_files
+    
     def do_single_trial(self, block_id, tral_id, is_training):
         super().do_single_trial(block_id, tral_id, is_training)
         current_datetime = datetime.now()
@@ -72,6 +90,12 @@ class MOT(Trial):
         self.new_row_df['Ground_truth_guess'] = ground_truth
         self.new_row_df['Guess'] = choice
         self.new_row_df['Guess_success'] = int(choice == ground_truth) if choice != -1 else choice
+        
+        _, png_files = MOT.get_png_files(self.path_for_mit_icons, self.snowflakes_id_to_use)
+        png_files = sorted(png_files)
+        for i in range(len(png_files)):
+            self.new_row_df[os.path.basename(png_files[i])] = "MOT"
+            
         self.df.loc[len(self.df)] = self.new_row_df
         self.df.to_csv(os.path.join(self.dir_name, f"{os.path.basename(os.path.normpath(self.dir_name))}.csv"), index=True)
         

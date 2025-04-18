@@ -135,9 +135,15 @@ class MIT(Trial):
         if success in [1,0]:
             self.new_row_df['Indicated_img'] =  os.path.basename(indicated_obj.image)
         else:
-            self.new_row_df['Indicated_img'] = indicated_obj
+            self.new_row_df['Indicated_img'] = -1
         self.new_row_df['Img_to_guess'] =  os.path.basename(guess_object.image)
-            
+        
+        for i in range(len(self.png_files)):
+            if i < self.n_targets:
+                self.new_row_df[os.path.basename(self.png_files[i])] = 1
+            elif i >= self.n_targets and i < (self.n_targets+self.n_distractors):
+                self.new_row_df[os.path.basename(self.png_files[i])] = 2
+                
         self.new_row_df['Ground_truth_guess'] = ground_truth
         self.new_row_df['Guess'] = choice
         self.new_row_df['Guess_success'] = int(choice == ground_truth) if choice != -1 else choice
@@ -149,6 +155,9 @@ class MIT(Trial):
 
     def create_objects(self):
         self.black_path, self.png_files = MIT.get_png_files(self.path_for_mit_icons, self.snowflakes_id_to_use)
+        for i in range(len(self.png_files)):
+            self.new_row_df[os.path.basename(self.png_files[i])] = -1
+            
         if True:
             new_png_files = []
             while len(new_png_files) < self.n_targets + self.n_distractors:
@@ -270,8 +279,12 @@ class MIT(Trial):
                         indicated_obj = obj
                         if obj == guess_object:
                             success = 1
+                            if guess_object in self.distractors:
+                                success = 4
                         else:
                             success = 0
+                            if guess_object in self.distractors:
+                                success = 5
                         return indicated_obj, success, task_time
                 if distr.contains(click_pos):
                     if guess_object in self.distractors:
@@ -289,13 +302,17 @@ class MIT(Trial):
     def show_results_window(self, ground_truth, choice, success):
         text_success = ""
         if success==1:
-            text_success = "Obiekt zidentyfikowany prawidłowo."
+            text_success = "Kształt zidentyfikowany prawidłowo."
         elif success==0:
-            text_success = "Obiekt NIE został zidentyfikowany prawidłowo."
+            text_success = "Kształt NIE został zidentyfikowany prawidłowo."
         elif success==2:
             text_success = "Obiekt rozpraszający zidentyfikowany prawidłowo."
         elif success==3:
-            text_success = "Obiekt NIE został zidentyfikowany prawidłowo, błędnie wybrano obiekt rozpraszający."
+            text_success = "Kształt NIE został zidentyfikowany prawidłowo. Błędnie wybrano obiekt rozpraszający."
+        elif success==4:
+            text_success = "Kształt NIE został zidentyfikowany prawidłowo. Powinno zostać kliknięte oznaczenie obiektu rozpraszającego."
+        elif success==5:
+            text_success = "Kształt NIE został zidentyfikowany prawidłowo. Powinno zostać kliknięte oznaczenie obiektu rozpraszającego."
             
         if ground_truth == "distractor":
             ground_truth_polish = "obiekt rozpraszający"
