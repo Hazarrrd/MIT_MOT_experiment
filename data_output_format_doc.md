@@ -71,11 +71,11 @@ Każdy wpis w zestawie danych zawiera następujące pola:
   - "xxx.png" (kształt który był oznaczony w zadaniu)
 
 ### Informacje które .png były targetem/distractorem/niewykorzystane
-Każde zdjęcie z eksperymentu ma swoją kolumnę i w niej wartość ("MOT",-1,1,2):
-  - "MOT" (dotyczy tylko MIT)
-  - -1 (nie wykorzystane w próbie MIT)
-  - 1 (target)
-  - 2 (distractor)
+- Każde zdjęcie z eksperymentu ma swoją kolumnę i w niej wartość ("MOT",-1,1,2):
+    - "MOT" (dotyczy tylko MIT)
+    - 1 (nie wykorzystane w próbie MIT)
+    - 1 (target)
+    - 2 (distractor)
 
 ## Uwagi
 - Wartość -1 zazwyczaj oznacza, że zadanie zostało pominięte, porzucone lub przekroczony został limit czasu
