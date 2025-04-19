@@ -202,6 +202,49 @@ class Trial():
         core.wait(self.guessing_time)
         return to_guess
 
+    def calculate_vectors_and_angle(self, target_pos, click_pos, motoric_obj_delta):
+        """
+        Calculate magnitudes of two vectors and angle between them.
+
+        Args:
+            target_pos (tuple): (TargetX, TargetY)
+            click_pos (tuple): (ClickX, ClickY)
+            motoric_obj_delta (tuple): (Motoric_obj_Vx, Motoric_obj_Vy)
+
+        Returns:
+            dict: Dictionary with magnitudes and angles (radians and degrees)
+        """
+        TargetX, TargetY = target_pos
+        ClickX, ClickY = click_pos
+        V1_x, V1_y = motoric_obj_delta
+
+        # Second vector: from Target to Click
+        V2_x = ClickX - TargetX
+        V2_y = ClickY - TargetY
+
+        # Magnitudes
+        V1_magnitude = math.hypot(V1_x, V1_y)
+        V2_magnitude = math.hypot(V2_x, V2_y)
+
+        # Dot product
+        dot_product = V1_x * V2_x + V1_y * V2_y
+
+        # Safe angle calculation
+        if V1_magnitude != 0 and V2_magnitude != 0:
+            cos_theta = dot_product / (V1_magnitude * V2_magnitude)
+            cos_theta = min(1.0, max(-1.0, cos_theta))  # clamp to avoid math domain error
+            angle_rad = math.acos(cos_theta)
+            angle_deg = math.degrees(angle_rad)
+        else:
+            angle_rad = None
+            angle_deg = None
+
+        return {
+            'Motoric_obj_V1_magnitude': V1_magnitude,
+            'Motoric_click_V2_magnitude': V2_magnitude,
+            'Angle_objV_click': angle_deg
+        }
+    
     def motoric_task(self):
         objectibe_circle = visual.Circle(self.win, radius=self.motoric_circle_radius, lineColor="white", fillColor=None, pos=(0,0))
         objective = visual.Circle(self.win, radius=self.motoric_radius, fillColor="black", pos=None)
@@ -213,7 +256,13 @@ class Trial():
                     'Task_time_motoric': None,
                     'Movement_start': None,
                     'Movement_duration': None,
+                    'Motoric_obj_Vx': None,
+                    'Motoric_obj_Vy': None,
+                    'Motoric_obj_V1_magnitude': None,
+                    'Motoric_click_V2_magnitude': None,
+                    'Angle_objV_click': None
                     }
+        last_frame_pos = None
         # Define the cross using ShapeStim
         cross = [visual.ShapeStim(
             self.win,
@@ -224,7 +273,7 @@ class Trial():
         ) for i in range(2)]
         how_long = self.motoric_radius//5
 
-        objective_position = np.random.uniform(-np.pi/2, np.pi/2)
+        objective_position = np.random.uniform(-np.pi, np.pi)
         objective_direction = np.random.choice([1,-1])
 
         video_filename = os.path.join(os.path.join(self.dir_name,"videos"), f"{self.__class__.__name__}_block_{self.block_id}_trial{self.trial_id}")
@@ -249,7 +298,6 @@ class Trial():
        
         keys = []
         last_key_time = 0
-        
         self.kb.clock.reset()  # when you want to start the timer from
         keys = self.kb.getKeys( waitRelease=False)
         if len(keys)==1 and (keys[0].value == "down" or keys[0].value == "4"):
@@ -267,9 +315,17 @@ class Trial():
                         if move_change < task_time:
                             change_direction *= -1
                             del self.time_of_mov_changes_motoric[0]
+                last_frame_pos = objective.pos
                 objective_position = (objective_position + self.speed_motoric*objective_direction*change_direction) % (2*np.pi) ##care for modulo
                 objective.pos = (self.motoric_circle_radius * np.cos(objective_position), 
                                 self.motoric_circle_radius * np.sin(objective_position))
+                
+                if last_frame_pos is not None:
+                    delta_x = objective.pos[0] - last_frame_pos[0]
+                    delta_y = objective.pos[1] - last_frame_pos[1]
+                    task_data['Motoric_obj_Vx'] = delta_x
+                    task_data['Motoric_obj_Vy'] = delta_y
+        
                 
                 cross[0].setVertices([
                     [objective.pos[0], objective.pos[1] + how_long], [objective.pos[0], objective.pos[1] - how_long]   # Vertical line
@@ -300,8 +356,19 @@ class Trial():
                 task_data['Movement_start'] = self.motoric_movement_start-start_time
                 task_data['Norm_Euc_Dist'] = math.sqrt(pow((objective.pos[0]- click_pos[0])/self.win.size[0],2)+pow((objective.pos[1]- click_pos[1])/self.win.size[1],2))
                 task_data['Movement_duration'] = task_time-(self.motoric_movement_start-start_time)
+                
+                # Prepare input data
+                if last_frame_pos is not None:
+                    target_pos = (task_data['TargetX'], task_data['TargetY'])
+                    motoric_obj_delta = (task_data['Motoric_obj_Vx'], task_data['Motoric_obj_Vy'])
+                    # Calculate additional metrics
+                    additional_task_data = self.calculate_vectors_and_angle(target_pos, click_pos, motoric_obj_delta)
+                    task_data.update(additional_task_data)
+                    
                 for key, val in task_data.items():
                     print(f"{key}: {val}")
+                    
+                
             else:
                 print("Task time out")
                 task_data['ClickX'] = -1
@@ -309,6 +376,9 @@ class Trial():
                 task_data['Movement_start'] = -1
                 task_data['Norm_Euc_Dist'] = -1
                 task_data['Movement_duration'] = -1
+                task_data['Motoric_obj_V1_magnitude'] = -1
+                task_data['Motoric_click_V2_magnitude'] = -1
+                task_data['Angle_objV_click'] = -1
         else:
             print("No key 'left' pressed - failed trial")
             task_data['TargetX'] = -1
@@ -319,6 +389,11 @@ class Trial():
             task_data['Movement_start'] = -1
             task_data['Norm_Euc_Dist'] = -1
             task_data['Movement_duration'] = -1
+            task_data['Motoric_obj_Vx'] = -1
+            task_data['Motoric_obj_Vy'] = -1
+            task_data['Motoric_obj_V1_magnitude'] = -1
+            task_data['Motoric_click_V2_magnitude'] = -1
+            task_data['Angle_objV_click'] = -1
         self.win.flip()
         if self.camera_is_recording:
             self.camera_is_recording = False
