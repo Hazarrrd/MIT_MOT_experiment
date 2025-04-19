@@ -381,6 +381,152 @@ def final_analyse_plots(summary_all_path, save_dir):
 
     print(f"✅ Generated dynamic plots correctly into {plots_dir}")
     
+import os
+import pandas as pd
+
+def analyze_concat_file(df, save_dir):
+    """
+    Analyze the concatenated DataFrame and save the results to a specific folder.
+    Focuses only on creating readable agreement tables.
+    """
+    print(df.columns)
+    df = df[df['Type'] == 'MIT']
+    
+    # Check if the filtered dataframe is empty
+    if df.empty:
+        print("No MIT data found after filtering.")
+        return
+    
+    # Create a specific subfolder for the outputs
+    output_folder = os.path.join(save_dir, "analysis_results")
+    os.makedirs(output_folder, exist_ok=True)
+    print(f"Created output folder: {output_folder}")
+    
+    # --- Agreement Table (original names) with improved formatting ---
+    if 'Img_to_guess' in df.columns and 'Indicated_img' in df.columns:
+        # Create the cross-tabulation
+        agreement_table = pd.crosstab(
+            df['Img_to_guess'], 
+            df['Indicated_img'], 
+            margins=True,  # Add row and column totals
+            margins_name='Total'
+        )
+        
+        # Calculate percentages
+        percentage_table = pd.crosstab(
+            df['Img_to_guess'], 
+            df['Indicated_img'], 
+            normalize='index',  # Get row percentages
+            values=df['Img_to_guess'],
+            aggfunc=lambda x: len(x) / len(x)  # This just counts
+        ) * 100  # Convert to percentage
+        
+        # Round percentages to 1 decimal place
+        percentage_table = percentage_table.round(1)
+        
+        # Create a combination table with counts and percentages
+        combined_table = pd.DataFrame()
+        
+        for img_to_guess in agreement_table.index:
+            if img_to_guess == 'Total':
+                continue
+            for indicated_img in agreement_table.columns:
+                if indicated_img == 'Total':
+                    continue
+                count = agreement_table.loc[img_to_guess, indicated_img]
+                percentage = percentage_table.loc[img_to_guess, indicated_img] if img_to_guess in percentage_table.index and indicated_img in percentage_table.columns else 0
+                combined_table.loc[img_to_guess, indicated_img] = f"{count} ({percentage}%)"
+        
+        # Save both tables
+        agreement_table_path = os.path.join(output_folder, "img_to_guess_vs_indicated_img_counts.csv")
+        agreement_table.to_csv(agreement_table_path)
+        print(f"Agreement table (counts) saved to {agreement_table_path}")
+        
+        percentage_table_path = os.path.join(output_folder, "img_to_guess_vs_indicated_img_percentages.csv")
+        percentage_table.to_csv(percentage_table_path)
+        print(f"Agreement table (percentages) saved to {percentage_table_path}")
+        
+        combined_table_path = os.path.join(output_folder, "img_to_guess_vs_indicated_img_combined.csv")
+        combined_table.to_csv(combined_table_path)
+        print(f"Agreement table (counts with percentages) saved to {combined_table_path}")
+        
+        # Generate a more readable HTML version with styling
+        html_path = os.path.join(output_folder, "img_to_guess_vs_indicated_img.html")
+        
+        # Create a styled HTML table
+        html_content = """
+        <html>
+        <head>
+            <style>
+                table {
+                    border-collapse: collapse;
+                    width: 100%;
+                    font-family: Arial, sans-serif;
+                }
+                th, td {
+                    border: 1px solid #dddddd;
+                    text-align: center;
+                    padding: 8px;
+                }
+                th {
+                    background-color: #f2f2f2;
+                }
+                tr:nth-child(even) {
+                    background-color: #f9f9f9;
+                }
+                .total-row, .total-col {
+                    font-weight: bold;
+                    background-color: #e6e6e6;
+                }
+                .highlight {
+                    background-color: #e6ffe6;
+                }
+            </style>
+        </head>
+        <body>
+            <h2>Image Selection Analysis</h2>
+            <p>This table shows the relationship between the image to guess and what was indicated by participants.</p>
+            <h3>Counts with Percentages</h3>
+        """
+        
+        # Add the table content
+        html_content += "<table><tr><th>Image to Guess / Indicated</th>"
+        for col in agreement_table.columns:
+            css_class = " class='total-col'" if col == 'Total' else ""
+            html_content += f"<th{css_class}>{col}</th>"
+        html_content += "</tr>"
+        
+        for idx, row in enumerate(agreement_table.index):
+            css_class = " class='total-row'" if row == 'Total' else ""
+            html_content += f"<tr{css_class}><th{css_class}>{row}</th>"
+            for col in agreement_table.columns:
+                cell_class = ""
+                if row == col and row != 'Total' and col != 'Total':
+                    cell_class = " class='highlight'"  # Highlight diagonal (correct guesses)
+                elif row == 'Total' or col == 'Total':
+                    cell_class = " class='total-col'" if col == 'Total' and row == 'Total' else " class='total-col'" if col == 'Total' else " class='total-row'"
+                
+                value = agreement_table.loc[row, col]
+                percentage = ""
+                if row != 'Total' and col != 'Total':
+                    percentage = f" ({percentage_table.loc[row, col]:.1f}%)" if row in percentage_table.index and col in percentage_table.columns else ""
+                
+                html_content += f"<td{cell_class}>{value}{percentage}</td>"
+            html_content += "</tr>"
+        
+        html_content += """
+            </table>
+            <p><em>Note: Numbers in parentheses represent row percentages (% of each "Image to guess" that was indicated as each option).</em></p>
+        </body>
+        </html>
+        """
+        
+        with open(html_path, 'w') as f:
+            f.write(html_content)
+        print(f"Interactive HTML agreement table saved to {html_path}")
+    else:
+        print("Cannot create agreement table: 'Img_to_guess' or 'Indicated_img' columns are missing.")
+    
 if __name__ == "__main__":
     all_experiments_summary = []
     all_trials = [] 
@@ -416,6 +562,7 @@ if __name__ == "__main__":
         cols = all_trials_df.columns.tolist()
         cols = ['Experiment'] + [col for col in cols if col != 'Experiment']
         all_trials_df = all_trials_df[cols]
+        analyze_concat_file(all_trials_df, result_path)
         all_trials_output_path = os.path.join(result_path, "all_trials_concat.csv")
         all_trials_df.to_csv(all_trials_output_path, index=False)
         print(f"All trials concatenated CSV saved to {all_trials_output_path}")
