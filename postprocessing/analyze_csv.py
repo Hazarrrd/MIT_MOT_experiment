@@ -389,8 +389,9 @@ def analyze_concat_file(df, save_dir):
     Analyze the concatenated DataFrame and save the results to a specific folder.
     Focuses only on creating readable agreement tables.
     """
-    print(df.columns)
+    #print(df.columns)
     df = df[df['Type'] == 'MIT']
+    df = df[df['Ground_truth_guess'] == 'target']
     
     # Check if the filtered dataframe is empty
     if df.empty:
@@ -398,7 +399,7 @@ def analyze_concat_file(df, save_dir):
         return
     
     # Create a specific subfolder for the outputs
-    output_folder = os.path.join(save_dir, "analysis_results")
+    output_folder = os.path.join(save_dir, "analysis_shapes")
     os.makedirs(output_folder, exist_ok=True)
     print(f"Created output folder: {output_folder}")
     
