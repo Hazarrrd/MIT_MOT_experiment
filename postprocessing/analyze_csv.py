@@ -127,7 +127,7 @@ def analyze_single_experiment(csv_file_path):
          'Task_time_guess', 'Movement_duration', 'Movement_start']].mean()
     for type_val, row in accuracy_by_type.iterrows():
         for col_name, value in row.items():
-            summary[f'{col_name}_{type_val}'] = value
+            summary[f'{col_name}_type_{type_val}'] = value
         
     # Second: Accuracy by Type
     accuracy_by_type_and_GT = df.groupby(['Type', 'Ground_truth_guess'])[['Guess_success', 'MIT_obj_identified', 'Norm_Euc_Dist', 
@@ -149,7 +149,6 @@ def analyze_single_experiment(csv_file_path):
         ['Guess_success', 'MIT_obj_identified', 'Norm_Euc_Dist', 
          'Task_time_guess', 'Movement_duration', 'Movement_start']
     ].mean()
-    
     
     for (type_val, n_targets_val), row in stats_per_targets_type.iterrows():
         for col_name, value in row.items():
@@ -255,16 +254,30 @@ def final_analyse_plots(summary_all_path, save_dir):
 
     # Two separate extractors
     def extract_n_targets(colname):
-        match = re.search(r'Ntargets_(\d+)', colname)
+        match = re.search(r'_Ntargets_(\d+)', colname)
         if match:
             return int(match.group(1))
         else:
             return None
 
     def extract_block(colname):
-        match = re.search(r'block_(\d+)', colname)
+        match = re.search(r'_block_(\d+)', colname)
         if match:
             return int(match.group(1))
+        else:
+            return None
+        
+    def extract_type(colname):
+        match = re.search(r'_type_(\w+)', colname)
+        if match:
+            return match.group(1)
+        else:
+            return None
+    
+    def extract_GT(colname):
+        match = re.search(r'_GT_(\w+)', colname)
+        if match:
+            return match.group(1)
         else:
             return None
 
@@ -274,6 +287,10 @@ def final_analyse_plots(summary_all_path, save_dir):
             extractor = extract_n_targets
         elif pattern_type == 'block':
             extractor = extract_block
+        elif pattern_type == 'type':
+            extractor = extract_type
+        elif pattern_type == 'GT':
+            extractor = extract_GT
         else:
             raise ValueError("pattern_type must be 'Ntargets' or 'block'")
 
@@ -283,7 +300,6 @@ def final_analyse_plots(summary_all_path, save_dir):
         
         plt.figure(figsize=(12, 6))
         all_x_clean = []
-
         for task in ['MIT', 'MOT']:
             task_cols = [col for col in metric_cols if task in col]
             x = []
@@ -315,7 +331,7 @@ def final_analyse_plots(summary_all_path, save_dir):
         plt.grid(True)
 
         # Force integer ticks
-        if all_x_clean:
+        if all_x_clean and type(max(all_x_clean)) is not str:
             min_x = min(all_x_clean)
             max_x = max(all_x_clean)
             plt.xticks(range(min_x, max_x + 1))
@@ -352,6 +368,15 @@ def final_analyse_plots(summary_all_path, save_dir):
             xlabel='Block Number',
             title_prefix='Dynamics over Blocks',
             filename_prefix='dynamics_Blocks'
+        )
+    
+    for metric in metrics:
+        plot_dynamic(
+            metric_keyword=metric,
+            pattern_type='GT',
+            xlabel='Distractor/Target GT',
+            title_prefix='Depending from Ground Truth',
+            filename_prefix='dynamics_GT'
         )
 
     print(f"✅ Generated dynamic plots correctly into {plots_dir}")
