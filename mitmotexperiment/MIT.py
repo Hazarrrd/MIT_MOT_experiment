@@ -96,7 +96,7 @@ class MIT(Trial):
         self.win.flip()
         while True:
             keys = event.getKeys()
-            if 'down' in keys or '4' in keys:
+            if 'down' in keys or '1' in keys:
                 break
 
         # Start the Observation Phase
@@ -336,5 +336,5 @@ class MIT(Trial):
         #core.wait(3)
         while True:
             keys = event.getKeys()
-            if 'down' in keys or '4' in keys:
+            if 'down' in keys or '1' in keys:
                 break

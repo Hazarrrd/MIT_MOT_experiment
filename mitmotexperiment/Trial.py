@@ -300,7 +300,7 @@ class Trial():
         last_key_time = 0
         self.kb.clock.reset()  # when you want to start the timer from
         keys = self.kb.getKeys( waitRelease=False)
-        if len(keys)==1 and (keys[0].value == "down" or keys[0].value == "4"):
+        if len(keys)==1 and (keys[0].value == "down" or keys[0].value == '1'):
             task_time = 0
             start_time = core.getTime()
             actual_time = start_time

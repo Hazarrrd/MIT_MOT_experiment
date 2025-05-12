@@ -113,7 +113,7 @@ class Experiment():
         # Wait for the duration or until a key is pressed
         while True:
             keys = event.getKeys()
-            if 'down' in keys or '4' in keys:
+            if 'down' in keys or '1' in keys:
                 break
     
     def upload_param(self, **kwargs):
