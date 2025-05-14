@@ -18,7 +18,7 @@ class Trial():
     def __init__(self, win, show_circles, circle_radius, small_circle_radius, obj_radius, hz_target, hz_circle, instruction_1, instruction_2, instruction_2_MIT, fps,
                 random_direction_small_circles, random_direction_big_circle, random_offset_target_distractor, random_offset_circles, random_distractor_target_orientation,
                 observation_time,tracking_time, guessing_time, direction_changes, direction_changes_motoric, change_big_direction, show_trial_results, path_for_mit_icons, snowflakes_id_to_use, img_mode, 
-                motoric_radius, motoric_circle_radius, hz_motoric, answer_1_time_limit, answer_MIT_time_limit, motor_task_time_limit, is_windows_OS, dir_name, df, form):
+                motoric_radius, motoric_circle_radius, hz_motoric, answer_1_time_limit, answer_MIT_time_limit, motor_task_time_limit, key_to_click, camera_pause, is_windows_OS, dir_name, df, form):
         self.is_windows_OS = is_windows_OS
         self.form = form
         self.motoric_movement_start = -1
@@ -63,6 +63,8 @@ class Trial():
         self.answer_MIT_time_limit = answer_MIT_time_limit
         self.camera_is_recording = False
         self.kb = keyboard.Keyboard()
+        self.key_to_click = key_to_click
+        self.camera_pause = camera_pause
 
     def set_params_for_block(self, n_targets, n_circles):
         self.n_targets = n_targets
@@ -294,13 +296,13 @@ class Trial():
         
         mouse = event.Mouse(win=self.win)
         self.win.flip()
-        time.sleep(2) ## camera starting time
+        time.sleep(self.camera_pause) ## camera starting time
        
         keys = []
         last_key_time = 0
         self.kb.clock.reset()  # when you want to start the timer from
         keys = self.kb.getKeys( waitRelease=False)
-        if len(keys)==1 and (keys[0].value == "down" or keys[0].value == '1'):
+        if len(keys)==1 and (keys[0].value == "down" or keys[0].value == self.key_to_click):
             task_time = 0
             start_time = core.getTime()
             actual_time = start_time

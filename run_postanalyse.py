@@ -24,11 +24,12 @@ def model_inference(path_to_experiment):
 def model_inference3D(path_to_experiment):
     # Build ffmpeg command
     #/home/janek/miniconda3/envs/bundesliga/bin/python3 /home/janek/numlabs/repozytoria/ext_2024_MOT_and_pose_research/inferencer_demo.py --input webcam --output x.mp4
-    for video in glob.glob(os.path.join(path_to_experiment,'videos',"*")):
-        print(video)
-        command = f"/home/janek/miniconda3/envs/bundesliga/bin/python pose_estimation/body3d_img2pose_demo.py /home/janek/numlabs/repozytoria/ext_2024_MOT_and_pose_research/models/det_models/rtmdet_m_640-8xb32_coco-person.py /home/janek/numlabs/repozytoria/ext_2024_MOT_and_pose_research/models/det_models/rtmdet_m_8xb32-100e_coco-obj365-person-235e8209.pth /home/janek/numlabs/repozytoria/ext_2024_MOT_and_pose_research/models/rtmpose/rtmw3d-l_8xb64_cocktail14-384x288.py /home/janek/numlabs/repozytoria/ext_2024_MOT_and_pose_research/models/rtmpose/rtmw3d-l_8xb64_cocktail14-384x288-794dbc78_20240626.pth --input {video} --save-predictions --output-root {os.path.join(path_to_experiment,'inference_results/3d')} --show-interval 0".split(" ")
-        process = subprocess.Popen(command)
-        process.wait()
+    #for video in glob.glob(os.path.join(path_to_experiment,'videos',"*")):
+    video = os.path.join(path_to_experiment,'videos')
+    print(video)
+    command = f"/home/janek/miniconda3/envs/bundesliga/bin/python pose_estimation/body3d_img2pose_demo.py /home/janek/numlabs/repozytoria/ext_2024_MOT_and_pose_research/models/det_models/rtmdet_m_640-8xb32_coco-person.py /home/janek/numlabs/repozytoria/ext_2024_MOT_and_pose_research/models/det_models/rtmdet_m_8xb32-100e_coco-obj365-person-235e8209.pth /home/janek/numlabs/repozytoria/ext_2024_MOT_and_pose_research/models/rtmpose/rtmw3d-l_8xb64_cocktail14-384x288.py /home/janek/numlabs/repozytoria/ext_2024_MOT_and_pose_research/models/rtmpose/rtmw3d-l_8xb64_cocktail14-384x288-794dbc78_20240626.pth --input {video} --save-predictions --output-root {os.path.join(path_to_experiment,'inference_results/3d')} --show-interval 0".split(" ")
+    process = subprocess.Popen(command)
+    process.wait()
 
 def model_inference3D_win(path_to_experiment):
     path_to_experiment = Path(path_to_experiment)  # Convert to Path object for cross-platform compatibility
@@ -65,12 +66,22 @@ def model_inference3D_win(path_to_experiment):
         process = subprocess.Popen(command, shell=True)
         process.wait()
 
-#experiment = r"C:\Users\janns\Desktop\psychologia\MIT_MOT_experiment\results\experiment_2025-02-16-15-23-31"
-experiment = "/home/janek/psychologia/MIT_MOT_experiment/results/experiment_2025-03-08-18-00-32_TEST/"
-experiment_path = Path(experiment)
-
-#model_inference(experiment)
-#model_inference3D(experiment)
-# Get all video files in the "videos" folder
-for filename in glob.glob(str(experiment_path / "videos" / "*")):
-    get_metrics(experiment, Path(filename).stem)
+if __name__ == "__main__":
+    do_for_each_video = True
+    results_dir = Path("/home/janek/psychologia/MIT_MOT_experiment/results_real/")
+    
+    if do_for_each_video:
+        # Iterate over all subdirectories starting with "experiment_"
+        for experiment_path in results_dir.glob("experiment_*"):
+            if experiment_path.is_dir():
+                print(f"Running model inference for: {experiment_path}")
+                model_inference3D(str(experiment_path))
+                #for filename in glob.glob(str(experiment_path / "videos" / "*")):
+                #    get_metrics(experiment, Path(filename).stem)
+    else:
+        experiment = "/home/janek/psychologia/MIT_MOT_experiment/results/experiment_2025-03-08-18-00-32_TEST/"
+        experiment = "/home/janek/Downloads/k2/"
+        experiment_path = Path(experiment)
+        #model_inference3D(experiment)
+        for i in ['k1']:
+            get_metrics(experiment, i)

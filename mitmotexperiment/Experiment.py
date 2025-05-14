@@ -11,7 +11,8 @@ import json
 import random
 
 class Experiment():
-    def __init__(self, win_size = (800,800), full_size = True, results_dir = None, path_for_mit_icons = None, snowflakes_id_to_use = None):
+    def __init__(self, win_size = (800,800), full_size = True, results_dir = None, path_for_mit_icons = None, snowflakes_id_to_use = None, key_to_click = None):
+        self.key_to_click = key_to_click
         # Create the Window
         self.win = visual.Window(win_size, fullscr=False, color="gray", units="pix")
     #    event.globalKeys.add(key='q', func=self.escape_handler)
@@ -113,7 +114,7 @@ class Experiment():
         # Wait for the duration or until a key is pressed
         while True:
             keys = event.getKeys()
-            if 'down' in keys or '1' in keys:
+            if 'down' in keys or self.key_to_click in keys:
                 break
     
     def upload_param(self, **kwargs):

@@ -9,6 +9,9 @@ import subprocess
 import glob
 import random
 
+
+
+
 ## Distance to target: w kazdej klatce dystans palca wskazujacego do celu
 ## W każdej klatce V cm na sekunda
 ## Kąty okciowe/ramienia
@@ -103,6 +106,9 @@ random_offset_target_distractor = True
 random_offset_circles = True
 random_distractor_target_orientation = True
 
+key_to_click = '1'
+camera_pause = 0.5
+
 if is_windows_OS:
     path_for_mit_icons = r"D:\Desktop\MIT_MOT_experiment/icons_mit/" + mit_objects_folder
     results_dir = r"D:\Desktop\MIT_MOT_experiment/results/"
@@ -140,7 +146,7 @@ def model_inference3D(path_to_experiment):
         process.wait()
 
 if __name__ == '__main__':
-    experiment = Experiment(win_size = win_size, full_size = full_size, results_dir = results_dir, path_for_mit_icons = path_for_mit_icons, snowflakes_id_to_use = snowflakes_id_to_use)
+    experiment = Experiment(win_size = win_size, full_size = full_size, results_dir = results_dir, path_for_mit_icons = path_for_mit_icons, snowflakes_id_to_use = snowflakes_id_to_use, key_to_click = key_to_click)
     experiment.set_mouse_visibility(mouse_visible)
     experiment.upload_param(
     show_circles=show_circles, 
@@ -174,6 +180,8 @@ if __name__ == '__main__':
     answer_1_time_limit=answer_1_time_limit, 
     answer_MIT_time_limit=answer_MIT_time_limit, 
     motor_task_time_limit=motor_task_time_limit,
+    key_to_click = key_to_click,
+    camera_pause = camera_pause,
     is_windows_OS=is_windows_OS
 )
     experiment.initialize_mot()
