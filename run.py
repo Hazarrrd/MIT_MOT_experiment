@@ -107,7 +107,7 @@ random_offset_circles = True
 random_distractor_target_orientation = True
 
 key_to_click = '1'
-camera_pause = 0.5
+camera_pause = 2.3
 
 if is_windows_OS:
     path_for_mit_icons = r"D:\Desktop\MIT_MOT_experiment/icons_mit/" + mit_objects_folder
