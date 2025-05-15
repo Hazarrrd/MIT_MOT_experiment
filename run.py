@@ -35,7 +35,7 @@ mouse_visible = False
 fps = 60
 
 training_trials_per_block = 12 #12
-trials_per_block = 54 #54
+trials_per_block = 60 #54
 block_pairs_number = 2 #2
 target_circles_ammount_settups = {"MIT" : [[1,5],[2,5],[3,5]] , ##[X,Y] X - number of targets, Y - number of circles
                                   "MOT" : [[2,5],[3,5],[4,5]]} 
