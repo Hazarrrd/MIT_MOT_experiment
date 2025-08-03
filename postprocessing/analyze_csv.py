@@ -10,6 +10,56 @@ from scipy import stats
 result_path = "/home/janek/psychologia/MIT_MOT_experiment/results_real/"
 experiments_dirs = glob.glob(os.path.join(result_path, "*"))
 
+import numpy as np
+
+def confidence_ellipse_area_relative(click_points, object_points) -> float:
+    """
+    Calculates the area of a confidence ellipse for clicks relative to object positions.
+    
+    Parameters
+    ----------
+    click_points : array-like, shape (n_samples, 2)
+        Coordinates of the finger touch points.
+    object_points : array-like, shape (n_samples, 2)
+        Coordinates of the object positions.
+    
+    Returns
+    -------
+    float
+        Area of the confidence ellipse.
+    """
+
+    # Convert to numpy arrays
+    click_points = np.asarray(click_points, dtype=float)
+    object_points = np.asarray(object_points, dtype=float)
+
+    if click_points.shape != object_points.shape or click_points.shape[1] != 2:
+        raise ValueError("Both inputs must have shape (n_samples, 2) and match in size.")
+
+    # Compute relative positions so that object is at (0,0)
+    relative_points = click_points - object_points
+
+    # Mean center of relative positions
+    center = relative_points.mean(axis=0)
+
+    # Shift to center at (0,0) for covariance calculation
+    shifted = relative_points - center
+
+    # Covariance matrix
+    cov_matrix = np.cov(shifted, rowvar=False)
+
+    # Eigenvalues → variances along ellipse axes
+    eigenvalues, _ = np.linalg.eigh(cov_matrix)
+
+    # Semi-axes lengths = sqrt of eigenvalues
+    a, b = np.sqrt(eigenvalues)
+
+    # Area of ellipse
+    area = np.pi * a * b
+
+    return area
+
+
 def analyze_single_experiment(csv_file_path):
     df = pd.read_csv(csv_file_path)
     df['Timestamp'] = pd.to_datetime(df['Timestamp'], format='%Y-%m-%d %H-%M-%S', errors='coerce')
@@ -536,7 +586,7 @@ if __name__ == "__main__":
         file_name = os.path.basename(exp_path)
         print(f"Processing {file_name}")
         
-        csv_file_path = os.path.join(exp_path, f"{file_name}.csv")
+        csv_file_path = os.path.join(exp_path, f"{file_name}_joined.csv")
         if os.path.exists(csv_file_path):
             summary = analyze_single_experiment(csv_file_path)
             all_experiments_summary.append(summary)

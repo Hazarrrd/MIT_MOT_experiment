@@ -59,6 +59,13 @@ Każdy wpis w zestawie danych zawiera następujące pola:
 - **Movement_start**: Czas, liczony od początku zadania, kiedy osoba badana puściła przycisk i zaczęła ruch, -1 jeśli zadanie zostało pominięte lub przekroczony został czas na zadanie
 - **Movement_duration**: Czas w sekundach trwania ruchu (od puszczenia klawisza do naciśnięcia ekranu), gdzie Task_time_motoric = Movement_start + Movement_duration, -1 jeśli zadanie zostało pominięte lub przekroczony został czas na zadanie
 
+### Klikniecie przed/za celem:
+- **Motoric_obj_Vx** Koordynata X wektoru opisującego ruch obieku
+- **Motoric_obj_Vy** Koordynata Y wektoru opisującego ruch obieku
+- **Motoric_obj_V1_magnitude** Wartość wektoru prędkości obiektu
+- **Motoric_click_V2_magnitude** Wartość wektoru między obiektem, a klikniętym punktem (w praktyce odległość kliknięcia od obiektu z kierunkiem)
+- **Angle_objV_click** Kąt między wktorami V1 i V2, w praktyce wartości [0,90] oznaczją kliknięcie 'PRZED' obiektem względem prędkości, zaś [90,180] 'ZA'
+
 ### Informacje o Bodźcach Wizualnych
 - **Indicated_img**: 
   - "MOT" (dotyczy tylko MIT)

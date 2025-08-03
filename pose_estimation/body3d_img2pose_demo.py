@@ -295,178 +295,194 @@ def main():
     pose_estimator.cfg.visualizer.link_color = det_dataset_link_color
     pose_estimator.cfg.visualizer.kpt_color = det_kpt_color
     visualizer = VISUALIZERS.build(pose_estimator.cfg.visualizer)
+        
+    def process_file(file_to_process, skip_if_exists=True):    
+        if file_to_process == 'webcam':
+            input_type = 'webcam'
+        else:
+            input_type = mimetypes.guess_type(file_to_process)[0].split('/')[0]
 
-    if args.input == 'webcam':
-        input_type = 'webcam'
-    else:
-        input_type = mimetypes.guess_type(args.input)[0].split('/')[0]
-
-    if args.output_root == '':
-        save_output = False
-    else:
-        mmengine.mkdir_or_exist(args.output_root)
-        output_file = os.path.join(args.output_root,
-                                   os.path.basename(args.input))
-        if args.input == 'webcam':
-            output_file += '.mp4'
-        save_output = True
-
-    if args.save_predictions:
-        assert args.output_root != ''
-        args.pred_save_path = f'{args.output_root}/results_' \
-            f'{os.path.splitext(os.path.basename(args.input))[0]}.json'
-
-    if save_output:
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-
-    pose_est_results_list = []
-    pred_instances_list = []
-    if input_type == 'image':
-        frame = mmcv.imread(args.input, channel_order='rgb')
-        _, _, pred_3d_instances, _ = process_one_image(
-            args=args,
-            detector=detector,
-            frame=args.input,
-            frame_idx=0,
-            pose_estimator=pose_estimator,
-            pose_est_results_last=[],
-            pose_est_results_list=pose_est_results_list,
-            next_id=0,
-            visualize_frame=frame,
-            visualizer=visualizer)
+        if args.output_root == '':
+            save_output = False
+        else:
+            mmengine.mkdir_or_exist(args.output_root)
+            output_file = os.path.join(args.output_root,
+                                    os.path.basename(file_to_process))
+            if file_to_process == 'webcam':
+                output_file += '.mp4'
+            save_output = True
+        
+        if skip_if_exists and os.path.exists(output_file):
+            print(f"Skipping {file_to_process} — output already exists.")
+            return
+     
         if args.save_predictions:
-            # save prediction results
-            pred_instances_list = split_instances(pred_3d_instances)
+            assert args.output_root != ''
+            args.pred_save_path = f'{args.output_root}/results_' \
+                f'{os.path.splitext(os.path.basename(file_to_process))[0]}.json'
 
         if save_output:
-            frame_vis = visualizer.get_image()
-            mmcv.imwrite(mmcv.rgb2bgr(frame_vis), output_file)
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 
-    elif input_type in ['webcam', 'video']:
-        next_id = 0
-        pose_est_results = []
-
-        if args.input == 'webcam':
-            video = cv2.VideoCapture(0)
-        else:
-            video = cv2.VideoCapture(args.input)
-
-        (major_ver, minor_ver, subminor_ver) = (cv2.__version__).split('.')
-        if int(major_ver) < 3:
-            fps = video.get(cv2.cv.CV_CAP_PROP_FPS)
-        else:
-            fps = video.get(cv2.CAP_PROP_FPS)
-
-        video_writer = None
-        frame_idx = 0
-
-        while video.isOpened():
-            success, frame = video.read()
-            frame_idx += 1
-
-            if not success:
-                break
-
-            pose_est_results_last = pose_est_results
-
-            # First stage: 2D pose detection
-            # make person results for current image
-            (pose_est_results, pose_est_results_list, pred_3d_instances,
-             next_id) = process_one_image(
-                 args=args,
-                 detector=detector,
-                 frame=frame,
-                 frame_idx=frame_idx,
-                 pose_estimator=pose_estimator,
-                 pose_est_results_last=pose_est_results_last,
-                 pose_est_results_list=pose_est_results_list,
-                 next_id=next_id,
-                 visualize_frame=mmcv.bgr2rgb(frame),
-                 visualizer=visualizer)
-
+        pose_est_results_list = []
+        pred_instances_list = []
+        if input_type == 'image':
+            frame = mmcv.imread(file_to_process, channel_order='rgb')
+            _, _, pred_3d_instances, _ = process_one_image(
+                args=args,
+                detector=detector,
+                frame=file_to_process,
+                frame_idx=0,
+                pose_estimator=pose_estimator,
+                pose_est_results_last=[],
+                pose_est_results_list=pose_est_results_list,
+                next_id=0,
+                visualize_frame=frame,
+                visualizer=visualizer)
             if args.save_predictions:
                 # save prediction results
-                pred_instances_list.append(
-                    dict(
-                        frame_id=frame_idx,
-                        instances=split_instances(pred_3d_instances),
-                        keypoints_2d=np.array(pred_3d_instances["transformed_keypoints"])
-                        )
-                )
+                pred_instances_list = split_instances(pred_3d_instances)
 
-            def visualise_staff(pred_3d_instances, frame_vis):
-                if args.show:
-                    keypoints = np.array(pred_3d_instances["transformed_keypoints"][0])
-                    str_print = f""
-                    offset = 0
-                    for key,val in get_dict_angles(keypoints).items():
-                        if key in ["angle_elbow_2d", "angle_chip_2d"]:
-                            if not np.isnan(val):
-                                try:
-                                    str_print += (f" || {key}: {int(val)} || ")
-                                    cv2.putText(frame_vis, f"{key}: {val:.2f}deg", (50+offset, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 0), 2)
-                                    offset += 450
-                                except ValueError:
-                                    pass
-                    p1 = keypoints[8] ## elbow
-                    p2 = keypoints[10] ##wrist
-                    p3 = keypoints[6]  ##arm
-                    p4 = [524,128]
-                    print(p2)
-                    SCALE= pixel_distance(p1,p2) / 25
-                    str_print += (f" || elbow_wrist_dist_pix: {int(pixel_distance(p1,p2))} || wrist_monitor_dist: {int(real_world_distance(p2, p4,SCALE))} ")
-                    print(str_print)
-                    cv2.putText(frame_vis, f"elbow_wrist_dist_pix:: {pixel_distance(p1,p2):.2f}px", (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 0), 2)
-                    offset+=50
-                    cv2.putText(frame_vis, f"wrist_screen_dist:: {real_world_distance(p2, p4,SCALE):.2f}cm", (500, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 0), 2)
-                  
-            frame_vis = visualizer.get_image()
             if save_output:
-             #   visualise_staff(pred_3d_instances, frame_vis)  
-                if video_writer is None:
-                    # the size of the image with visualization may vary
-                    # depending on the presence of heatmaps
-                    video_writer = cv2.VideoWriter(output_file, fourcc, fps,
-                                                   (frame_vis.shape[1],
-                                                    frame_vis.shape[0]))
-                video_writer.write(mmcv.rgb2bgr(frame_vis))
-
-            if args.show:
-                # press ESC to exit
-                visualise_staff(pred_3d_instances, frame_vis)  
                 frame_vis = visualizer.get_image()
-                    
-                cv2.imshow('Visualization', frame_vis)
-                if cv2.waitKey(5) & 0xFF == 27:
+                mmcv.imwrite(mmcv.rgb2bgr(frame_vis), output_file)
+
+        elif input_type in ['webcam', 'video']:
+            next_id = 0
+            pose_est_results = []
+
+            if file_to_process == 'webcam':
+                video = cv2.VideoCapture(0)
+            else:
+                video = cv2.VideoCapture(file_to_process)
+
+            (major_ver, minor_ver, subminor_ver) = (cv2.__version__).split('.')
+            if int(major_ver) < 3:
+                fps = video.get(cv2.cv.CV_CAP_PROP_FPS)
+            else:
+                fps = video.get(cv2.CAP_PROP_FPS)
+
+            video_writer = None
+            frame_idx = 0
+
+            while video.isOpened():
+                success, frame = video.read()
+                frame_idx += 1
+
+                if not success:
                     break
-                time.sleep(args.show_interval)
 
-        video.release()
+                pose_est_results_last = pose_est_results
 
-        if video_writer:
-            video_writer.release()
+                # First stage: 2D pose detection
+                # make person results for current image
+                (pose_est_results, pose_est_results_list, pred_3d_instances,
+                next_id) = process_one_image(
+                    args=args,
+                    detector=detector,
+                    frame=frame,
+                    frame_idx=frame_idx,
+                    pose_estimator=pose_estimator,
+                    pose_est_results_last=pose_est_results_last,
+                    pose_est_results_list=pose_est_results_list,
+                    next_id=next_id,
+                    visualize_frame=mmcv.bgr2rgb(frame),
+                    visualizer=visualizer)
+
+                if args.save_predictions:
+                    # save prediction results
+                    pred_instances_list.append(
+                        dict(
+                            frame_id=frame_idx,
+                            instances=split_instances(pred_3d_instances),
+                            keypoints_2d=np.array(pred_3d_instances["transformed_keypoints"])
+                            )
+                    )
+
+                def visualise_staff(pred_3d_instances, frame_vis):
+                    if args.show:
+                        keypoints = np.array(pred_3d_instances["transformed_keypoints"][0])
+                        str_print = f""
+                        offset = 0
+                        for key,val in get_dict_angles(keypoints).items():
+                            if key in ["angle_elbow_2d", "angle_chip_2d"]:
+                                if not np.isnan(val):
+                                    try:
+                                        str_print += (f" || {key}: {int(val)} || ")
+                                        cv2.putText(frame_vis, f"{key}: {val:.2f}deg", (50+offset, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 0), 2)
+                                        offset += 450
+                                    except ValueError:
+                                        pass
+                        p1 = keypoints[8] ## elbow
+                        p2 = keypoints[10] ##wrist
+                        p3 = keypoints[6]  ##arm
+                        p4 = [524,128]
+                        print(p2)
+                        SCALE= pixel_distance(p1,p2) / 25
+                        str_print += (f" || elbow_wrist_dist_pix: {int(pixel_distance(p1,p2))} || wrist_monitor_dist: {int(real_world_distance(p2, p4,SCALE))} ")
+                        print(str_print)
+                        cv2.putText(frame_vis, f"elbow_wrist_dist_pix:: {pixel_distance(p1,p2):.2f}px", (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 0), 2)
+                        offset+=50
+                        cv2.putText(frame_vis, f"wrist_screen_dist:: {real_world_distance(p2, p4,SCALE):.2f}cm", (500, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 0), 2)
+                    
+                frame_vis = visualizer.get_image()
+                if save_output:
+                #   visualise_staff(pred_3d_instances, frame_vis)  
+                    if video_writer is None:
+                        # the size of the image with visualization may vary
+                        # depending on the presence of heatmaps
+                        video_writer = cv2.VideoWriter(output_file, fourcc, fps,
+                                                    (frame_vis.shape[1],
+                                                        frame_vis.shape[0]))
+                    video_writer.write(mmcv.rgb2bgr(frame_vis))
+
+                if args.show:
+                    # press ESC to exit
+                    visualise_staff(pred_3d_instances, frame_vis)  
+                    frame_vis = visualizer.get_image()
+                        
+                    cv2.imshow('Visualization', frame_vis)
+                    if cv2.waitKey(5) & 0xFF == 27:
+                        break
+                    time.sleep(args.show_interval)
+
+            video.release()
+
+            if video_writer:
+                video_writer.release()
+        else:
+            args.save_predictions = False
+            raise ValueError(
+                f'file {os.path.basename(file_to_process)} has invalid format.')
+
+        if args.save_predictions:
+            try:
+                with open(args.pred_save_path, 'w') as f:
+                    json.dump(
+                        dict(
+                            meta_info=pose_estimator.dataset_meta,
+                            instance_info=pred_instances_list,
+                            keypoints_2d=np.array(pred_3d_instances["transformed_keypoints"])),
+                        f,
+                        indent='\t')
+                print(f'predictions have been saved at {args.pred_save_path}')
+            except Exception as e:
+                print(f'failed to save predictions: {e}')
+
+        if save_output:
+            input_type = input_type.replace('webcam', 'video')
+            print_log(
+                f'the output {input_type} has been saved at {output_file}',
+                logger='current',
+                level=logging.INFO)
+    print(args.input)
+    if os.path.isdir(args.input):
+        for filename in os.listdir(args.input):
+            file_path = os.path.join(args.input, filename)
+            print(file_path)
+            process_file(file_path)
     else:
-        args.save_predictions = False
-        raise ValueError(
-            f'file {os.path.basename(args.input)} has invalid format.')
-
-    if args.save_predictions:
-        with open(args.pred_save_path, 'w') as f:
-            json.dump(
-                dict(
-                    meta_info=pose_estimator.dataset_meta,
-                    instance_info=pred_instances_list,
-                    keypoints_2d=np.array(pred_3d_instances["transformed_keypoints"])),
-                f,
-                indent='\t')
-        print(f'predictions have been saved at {args.pred_save_path}')
-
-    if save_output:
-        input_type = input_type.replace('webcam', 'video')
-        print_log(
-            f'the output {input_type} has been saved at {output_file}',
-            logger='current',
-            level=logging.INFO)
+        process_file(args.input)
 
 
 if __name__ == '__main__':

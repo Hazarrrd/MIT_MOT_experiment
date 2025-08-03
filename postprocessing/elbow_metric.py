@@ -1,6 +1,7 @@
 import json
 import numpy as np
 import cv2
+from postprocessing.key_map import keypoint_map
 
 def calculate_angle(a, b, c):
     """Calculate the angle between three points (shoulder, elbow, wrist)."""
@@ -73,9 +74,10 @@ def extract_elbow_angles(data):
     # 'right_elbow', '9'
     # 'right_wrist', '11'
     # 'right_hip', '13'
+    #  'end of finger' 124
     max_frame = -1
     p4 = [0,0]
-    SCALE = pixel_distance([560,470],[633,470]) / 10.5
+    SCALE = pixel_distance([735,506],[945,506]) / 23.5
     for frame in data['instance_info']:
         if len(frame["keypoints_2d"]['__ndarray__']) ==0:
             continue
@@ -103,6 +105,36 @@ def extract_elbow_angles(data):
         elbow_angles[frame['frame_id']-1] = out_dict
         dists[frame['frame_id']-1] = dist_dict
     
+    return elbow_angles, dists
+
+def extract_elbow_angles_frame(data):
+    """Extract elbow angles from MMPose JSON format."""
+    elbow_angles = {}
+    dists = {}
+    p4 = [0,0]
+    SCALE = pixel_distance([352,554],[700,554]) / 30
+    frame = data['keypoints_2d']
+    #print(data['instance_info'][0]['instances'][0].keys())
+    bbox = data['instance_info'][0]['instances'][0]['bbox'][0]
+    keypoints = np.array(frame['__ndarray__'][0])
+    p4 = keypoints[10]
+            
+    p1 = keypoints[8] ## elbow
+    p2 = keypoints[10] ##wrist
+    p3 = keypoints[6]  ##arm
+    out_dict = get_dict_angles(keypoints)
+    dist_dict = {
+        "elbow_wrist_dist_pix":pixel_distance(p1,p2),
+        "wrist_screen_dist":real_world_distance(p2, p4,SCALE)
+    }
+    elbow_angles[0] = out_dict
+    dists[0] = dist_dict
+    top_mid_bbox = np.array([bbox[0] + abs(bbox[0]-bbox[2])//2, bbox[1]])
+    print(f"BB top&mid: {top_mid_bbox-top_mid_bbox}cm")
+    for i in range(20):
+        print(f"{keypoint_map[str(i)]} cm: {np.round((keypoints[i]-top_mid_bbox)/SCALE,2)}cm") 
+    print(f"Estymowany wzrost: {np.round((keypoints[11]-top_mid_bbox)[1]/SCALE + np.linalg.norm(abs(keypoints[11]-keypoints[13]))/SCALE+np.linalg.norm(abs(keypoints[19]-keypoints[13]))/SCALE,2)}")
+    print(f"wymiary wózka {(932-182)/SCALE}")
     return elbow_angles, dists
 
 def overlay_angles_on_video(angles,dists, video_path, output_path):
@@ -141,12 +173,16 @@ def overlay_angles_on_video(angles,dists, video_path, output_path):
     
     cap.release()
     out.release()
+    print(f"Processed video saved to {output_path}")
 
 def get_metrics(file_dir, filename):
     name = filename
     input_json = f"{file_dir}inference_results/3d/results_{name}.json"  # Replace with actual path
-    input_video = f"{file_dir}inference_results/3d/{name}.mp4"
+    input_video = f"{file_dir}inference_results/3d/{name}.avi"
     output_video = f"{file_dir}inference_results/3d/{name}_angles.mp4"
+    print(input_json)
+    print(input_video)
+    print(output_video)
     with open(input_json, 'r') as f:
         data = json.load(f)
     angles,dists = extract_elbow_angles(data)
