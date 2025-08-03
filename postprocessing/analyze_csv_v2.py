@@ -238,6 +238,29 @@ by_type_targets.to_csv(OUTPUT_DIR / "summary_by_type_n_targets.csv", index=False
 # -----------------------------
 # Participant-level summaries
 # -----------------------------
+
+# Successful trials only
+df_succ = df[df["Success"] == 1].copy()
+
+def ellipse_area_for_participant(g):
+    needed = {"ClickX","ClickY","TargetX","TargetY"}
+    if not needed.issubset(g.columns):
+        return np.nan
+    arr = g[["ClickX","ClickY","TargetX","TargetY"]].astype(float).dropna()
+    if len(arr) < 3:
+        return np.nan
+    click = arr[["ClickX","ClickY"]].to_numpy()
+    obj   = arr[["TargetX","TargetY"]].to_numpy()
+    return confidence_ellipse_area_relative(click, obj)
+
+participant_ellipses = (
+    df_succ.groupby(["ID", "Type", "N_targets"], dropna=False)
+           .apply(ellipse_area_for_participant)
+           .reset_index(name="ellipse_area_px2")
+)
+
+participant_ellipses.to_csv(OUTPUT_DIR / "ellipse_area_per_participant.csv", index=False)
+
 # Base per-participant (all trials): trials and success_rate
 per_participant_base = (df
     .groupby(["ID","Experiment"] + group_cols, dropna=False)
@@ -261,6 +284,8 @@ per_participant = per_participant_base.merge(
     on=["ID","Experiment","Type","N_targets"],
     how="left"
 )
+per_participant = per_participant.merge(participant_ellipses, on=["ID", "Type", "N_targets"], how="left")
+
 per_participant.to_csv(OUTPUT_DIR / "participant_level_summary.csv", index=False)
 
 # Aggregated
@@ -482,27 +507,6 @@ if len(metrics_present) >= 3:
 # -------------------------------------------------------------------------
 #ELIPSES
 
-# Successful trials only
-df_succ = df[df["Success"] == 1].copy()
-
-def ellipse_area_for_participant(g):
-    needed = {"ClickX","ClickY","TargetX","TargetY"}
-    if not needed.issubset(g.columns):
-        return np.nan
-    arr = g[["ClickX","ClickY","TargetX","TargetY"]].astype(float).dropna()
-    if len(arr) < 3:
-        return np.nan
-    click = arr[["ClickX","ClickY"]].to_numpy()
-    obj   = arr[["TargetX","TargetY"]].to_numpy()
-    return confidence_ellipse_area_relative(click, obj)
-
-participant_ellipses = (
-    df_succ.groupby(["ID", "Type", "N_targets"], dropna=False)
-           .apply(ellipse_area_for_participant)
-           .reset_index(name="ellipse_area_px2")
-)
-
-participant_ellipses.to_csv(OUTPUT_DIR / "ellipse_area_per_participant.csv", index=False)
 # -------------------------------------------------------------------------
 # Significance testing on ellipse areas (Welch's t-tests)
 # -------------------------------------------------------------------------
