@@ -132,7 +132,7 @@ def sumamrize_results(path_experiment):
         # Merge on Type, Block, Trial (inner join so only matching rows remain)
         joined_df = pd.merge(other_df, final_df, on=["Type", "Block", "Trial"], how="left")
         joined_df.insert(57, "TE", joined_df["Motoric_click_V2_magnitude"])
-        joined_df.insert(58, "PoL", joined_df["Angle_objV_click"].apply(lambda x: "before" if x < 90 else "behind"))
+        joined_df.insert(58, "PoL", joined_df["Angle_objV_click"].apply(lambda x: 1 if x < 90 else -1))
         joined_path = os.path.join(path_experiment, path_experiment.name + "_joined.csv")
         joined_df.to_csv(joined_path, index=False)
         

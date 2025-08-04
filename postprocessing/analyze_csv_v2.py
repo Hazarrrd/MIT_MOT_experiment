@@ -124,7 +124,7 @@ def Pol_to_numbers(x):
     
 df['MIT_obj_identified'] = pd.to_numeric(df['MIT_obj_identified'], errors='coerce')
 df['MIT_obj_identified'] = df['MIT_obj_identified'].apply(clean_mit_obj_identified)
-df['PoL'] = df['PoL'].apply(Pol_to_numbers)
+#df['PoL'] = df['PoL'].apply(Pol_to_numbers)
 
 df.columns = [c.strip().replace(" ", "_") for c in df.columns]
 if "Timestamp" in df.columns:

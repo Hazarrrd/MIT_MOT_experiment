@@ -87,3 +87,75 @@ Każdy wpis w zestawie danych zawiera następujące pola:
 ## Uwagi
 - Wartość -1 zazwyczaj oznacza, że zadanie zostało pominięte, porzucone lub przekroczony został limit czasu
 - Zadania MIT i MOT mają niektóre pola specyficzne dla każdego typu zadania
+
+## Miary Kinematyczne (z *performance_kinematics_measures*)
+
+### Miary końcówki palca (zadanie dotykowe)
+- **MT** *(Movement Time; s)* — czas od puszczenia klawisza do dotknięcia ekranu (dokładność do tysięcznych sekundy).
+- **TE** *(Touching Error; px)* — odległość od środka ruchomego kółka (z zadania motorycznego) do punktu dotknięcia ekranu.
+- **PoL** *(Predicting or Lagging; {-1, 1})* — wskaźnik wyprzedzania lub pozostawania w tyle względem kierunku ruchu kółka:
+  - **1** — dotknięcie „przed” obiektem (w przedniej połowie względem wektora ruchu),
+  - **-1** — dotknięcie „za” obiektem (w tylnej połowie względem wektora ruchu).
+- **PV** *(Peak Velocity; cm/s)* — maksymalna prędkość liniowa końcówki palca.
+- **P2PV** *(% czasu)* — czas do osiągnięcia szczytowej prędkości jako **procent** całkowitego czasu ruchu (od puszczenia klawisza do dotknięcia ekranu).
+- **AV** *(Average Velocity; cm/s)* — średnia prędkość liniowa.
+- **D2TPV** *(Distance to Target at Peak Velocity; %)* — dystans do celu w momencie osiągnięcia PV jako **procent** całkowitej długości ruchu.
+- **D2TEM** *(Distance to Target near End Movement; %)* — jak wyżej, ale mierzony w momencie, gdy prędkość spada poniżej **10%** wartości PV (po osiągnięciu PV).
+- **XYPV** *(cm, cm)* — współrzędne **X, Y** w momencie PV.
+- **XYEM** *(cm, cm)* — współrzędne **X, Y** w momencie spadku prędkości poniżej **10%** PV.
+
+### Kodowanie sukcesu (dokładność)
+- **MOT** — 1 jeśli poprawnie wskazano, czy po okresie śledzenia wskazany był target czy dystraktor; w przeciwnym razie 0.
+- **MIT** — 1 tylko wtedy, gdy:
+  - kliknięto **target** (zielone kółko) **i** poprawny **kształt** na wianku, *albo*
+  - kliknięto **dystraktor** (czerwone kółko) **i** odpowiadający mu **symbol** na wianku.
+  W pozostałych przypadkach 0.
+
+> **Raportowanie:** Poziom wykonania liczymy jako **% poprawnych odpowiedzi** w danym warunku (MOT: 3 poziomy trudności; MIT: 3 poziomy trudności) — osobno dla każdego badanego. Dodatkowo dla każdej z miar powyżej raportujemy **odchylenie standardowe** w obrębie warunku jako wskaźnik zmienności.
+
+### Elipsa ufności dla punktów dotknięcia
+Dla każdego warunku wyznaczamy elipsę obejmującą końcowe punkty dotknięcia ekranu (przyjmując, że centrum ruchomego kółka to *(0, 0)*):
+- **Centrum** — średnia z końcowych współrzędnych dotknięć.
+- **Półosie** — pierwiastki kwadratowe z **wartości własnych** macierzy kowariancji (obliczonej dla odchyleń końcowych pozycji względem średniej).
+- **Orientacja** — wektory własne macierzy kowariancji.
+- **Miara** — **pole elipsy** (jako globalny wskaźnik precyzji/rozrzutu).
+
+---
+
+## Miary kątowe ramienia i łokcia
+
+**Definicje kątów:**
+- **Shoulder elevation** — kąt (°) między tułowiem a ramieniem; gdy ramię wzdłuż tułowia, kąt ≈ 0°.
+- **Elbow flexion** — kąt (°) po wewnętrznej stronie łokcia między ramieniem a przedramieniem.
+
+**W każdej próbie** obliczamy (dla obu kątów osobno):
+- **PV** *(°/s)* — szczytowa prędkość kątowa.
+- **P2PV** *(% czasu)* — czas do PV w % całkowitego czasu ruchu.
+- **AV** *(°/s)* — średnia prędkość kątowa.
+- **ROM** *(°)* — zakres ruchu (max – min).
+- **AA** *(°)* — średni kąt.
+- **SA** *(°)* — kąt początkowy.
+- **AUMC** *(obszar pod krzywą ruchu; s·°)* — całka z przebiegu kąta po czasie (pole pod krzywą kąt–czas).
+- **AvgPh** *(—)* — średnia faza z całej próby, gdzie faza w każdym punkcie czasu wyznaczana jest z unormowanych do maksimum: kąta i prędkości kątowej.
+
+> **Raportowanie zmienności:** Dla PV, P2PV, AV, ROM, AA i AUMC — w każdym warunku wyliczamy **odchylenie standardowe** (wariabilność), osobno dla każdej osoby.
+
+### Time-normalized miary
+- **TNA** *(Time Normalized Angle)* — normalizujemy czas próby do 100% i dzielimy na koszyki (np. co **20%** punktów czasu). W każdym koszyku liczymy średni **kąt** z prób danego warunku, a następnie **SD** tych średnich po koszykach.
+- **TNP** *(Time Normalized Phase)* — analogicznie do TNA, ale dla **fazy**.
+
+### Koordynacja ramię–łokieć
+- **TLPV** *(Time Lag to Peak Velocity; %)* — różnica (w % całkowitego czasu ruchu) między chwilą osiągnięcia PV przez ramię a łokieć.
+- **CCJA** *(Cross-Correlation of Joints’ Angles)* — współczynnik korelacji Pearsona między przebiegami kątów ramienia i łokcia przy zerowym przesunięciu.
+- **ACRP** *(Average Continuous Relative Phase; —)* — średnia z **CRP(t) = phase(shoulder) − phase(elbow)**; opcjonalnie również w wariancie **time-normalized** jak wyżej.
+
+### Struktura zmienności kinematycznej
+- **SaEn** *(Sample Entropy)* — miara złożoności szeregu czasowego; liczona na przebiegach kątów lub fazy.
+- **RQA** *(Recurrence Quantification Analysis)* — miary oparte na rekureencji do oceny regularności i innych własności sygnału (do doprecyzowania parametrów obliczeń przed implementacją).
+
+---
+
+## Agregacja i raportowanie
+- Wszystkie miary raportujemy **osobno dla każdego badanego** i **dla każdego warunku** (6 warunków: 3 × MOT, 3 × MIT).
+- Dla miar binarnych (sukces MOT/MIT) podajemy **% poprawnych odpowiedzi**.
+- Dla miar ciągłych raportujemy **średnią** i **odchylenie standardowe** (wariabilność) w obrębie warunku.
