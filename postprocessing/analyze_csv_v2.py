@@ -9,9 +9,9 @@ import statsmodels.formula.api as smf
 # -----------------------------
 # Config
 # -----------------------------
-CSV_PATH = "/home/janek/psychologia/MIT_MOT_experiment/results_real/all_trials_concat.csv"      # <- change me
+CSV_PATH = "/media/janek/T7/results_real/all_trials_concat.csv"      # <- change me
 EXCLUDE_TRAINING = True
-OUTPUT_DIR = Path("/home/janek/psychologia/MIT_MOT_experiment/results_real/analysis_outputs")
+OUTPUT_DIR = Path("/media/janek/T7/results_real/analysis_outputs")
 OUTPUT_DIR.mkdir(exist_ok=True)
 
 KEY_METRICS = [
@@ -19,10 +19,113 @@ KEY_METRICS = [
     "MT_s","PV","TE","PoL","AV","P2PV_pct","D2TPV_pct","D2TEM_pct","XYPV_x","XYPV_y","XYEM_x","XYEM_y","PathLen","sh_PV","sh_P2PV","sh_AV","sh_ROM","sh_AA","sh_SA","sh_AUMC","sh_AvgPh","el_PV","el_P2PV","el_AV","el_ROM","el_AA","el_SA","el_AUMC","el_AvgPh","coord_TLPV_pct","coord_CCJA","coord_ACRP_deg","SaEn_elbow","SaEn_shoulder","SaEn_ACRP","tau_t1","tau_t2","tau_t3","tau_t4","tau_t5","sh_TNA_t1","sh_TNA_t2","sh_TNA_t3","sh_TNA_t4","sh_TNA_t5","sh_TNP_t1","sh_TNP_t2","sh_TNP_t3","sh_TNP_t4","sh_TNP_t5","el_TNA_t1","el_TNA_t2","el_TNA_t3","el_TNA_t4","el_TNA_t5","el_TNP_t1","el_TNP_t2","el_TNP_t3","el_TNP_t4","el_TNP_t5"
 ]
 
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.patches import Ellipse
+
+def save_relative_cov_ellipse_from_center_cov(
+    center: np.ndarray,
+    cov_matrix: np.ndarray,
+    relative_points: np.ndarray | None = None,
+    out_path: str = "ellipse.png",
+    figsize: tuple[int, int] = (6, 6),
+    dpi: int = 200,
+    show: bool = False,
+) -> None:
+    """
+    Save a visualization of the covariance-based ellipse defined by (center, cov_matrix).
+    This draws the same std-ellipse used by your area function (semi-axes = sqrt(eigenvalues)).
+
+    Parameters
+    ----------
+    center : array-like, shape (2,)
+        Ellipse center (mean of relative points).
+    cov_matrix : array-like, shape (2, 2)
+        Covariance matrix of mean-centered relative points.
+    relative_points : array-like, shape (n_samples, 2), optional
+        Points to scatter for context (e.g., click_points - object_points).
+    out_path : str, default "ellipse.png"
+        File path to save the figure.
+    figsize : tuple, default (6, 6)
+        Matplotlib figure size.
+    dpi : int, default 200
+        Output DPI.
+    show : bool, default True
+        If True, displays the figure after saving; otherwise closes it.
+    """
+    center = np.asarray(center, dtype=float)
+    cov = np.asarray(cov_matrix, dtype=float)
+
+    # Eigen-decomposition (eigh -> symmetric)
+    eigvals, eigvecs = np.linalg.eigh(cov)
+
+    # Sort by descending eigenvalue (major axis first)
+    order = np.argsort(eigvals)[::-1]
+    eigvals = np.maximum(eigvals[order], 0.0)  # guard tiny negatives
+    eigvecs = eigvecs[:, order]
+
+    # Semi-axes (std-ellipse)
+    a, b = float(np.sqrt(eigvals[0])), float(np.sqrt(eigvals[1]))
+
+    # Orientation (degrees) from major-axis eigenvector
+    vx, vy = eigvecs[0, 0], eigvecs[1, 0]
+    angle_deg = float(np.degrees(np.arctan2(vy, vx)))
+
+    # Plot
+    fig, ax = plt.subplots(figsize=figsize)
+    if relative_points is not None:
+        rel = np.asarray(relative_points, dtype=float)
+        ax.scatter(rel[:, 0], rel[:, 1], s=12, alpha=0.75)
+
+    # Mark origin and center
+    ax.scatter([0], [0], marker="x", s=60)
+    ax.annotate("(0, 0)", (0, 0), xytext=(5, 5), textcoords="offset points")
+    ax.scatter([center[0]], [center[1]], s=30)
+    ax.annotate("center", (center[0], center[1]), xytext=(5, 5), textcoords="offset points")
+
+    # Ellipse patch: matplotlib expects diameters
+    ell = Ellipse(
+        xy=(center[0], center[1]),
+        width=2 * a,
+        height=2 * b,
+        angle=angle_deg,
+        fill=False,
+        linewidth=2,
+    )
+    ax.add_patch(ell)
+
+    # Cosmetics
+    ax.set_aspect("equal", adjustable="datalim")
+    ax.set_xlabel("X (relative)")
+    ax.set_ylabel("Y (relative)")
+    ax.set_title("Covariance ellipse (std)")
+
+    # Limits with padding
+    pad = 0.2 * max(2 * a, 2 * b, 1.0)
+    xmin = center[0] - a - pad
+    xmax = center[0] + a + pad
+    ymin = center[1] - b - pad
+    ymax = center[1] + b + pad
+    # Expand to include points if provided
+    if relative_points is not None:
+        xmin = min(xmin, np.min(relative_points[:, 0]) - pad)
+        xmax = max(xmax, np.max(relative_points[:, 0]) + pad)
+        ymin = min(ymin, np.min(relative_points[:, 1]) - pad)
+        ymax = max(ymax, np.max(relative_points[:, 1]) + pad)
+    ax.set_xlim(xmin, xmax)
+    ax.set_ylim(ymin, ymax)
+
+    # Save and show/close
+    plt.savefig(out_path, bbox_inches="tight", dpi=dpi)
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)
+
 # -----------------------------
 # Confidence ellipse function (as provided)
 # -----------------------------
-def confidence_ellipse_area_relative(click_points, object_points) -> float:
+def confidence_ellipse_area_relative(click_points, object_points, metadata="", MOTORIC_RADIUS=98.30400000000003) -> float:
     """
     Calculates the area of a confidence ellipse for clicks relative to object positions.
 
@@ -38,6 +141,7 @@ def confidence_ellipse_area_relative(click_points, object_points) -> float:
     float
         Area of the confidence ellipse.
     """
+    outliers_distance = 2*MOTORIC_RADIUS
     click_points = np.asarray(click_points, dtype=float)
     object_points = np.asarray(object_points, dtype=float)
 
@@ -47,6 +151,10 @@ def confidence_ellipse_area_relative(click_points, object_points) -> float:
     # Compute relative positions so that object is at (0,0)
     relative_points = click_points - object_points
 
+    dists = np.linalg.norm(relative_points, axis=1)
+    keep = dists <= outliers_distance
+    relative_points = relative_points[keep]
+    
     # Mean center of relative positions
     center = relative_points.mean(axis=0)
 
@@ -61,9 +169,11 @@ def confidence_ellipse_area_relative(click_points, object_points) -> float:
 
     # Semi-axes lengths = sqrt of eigenvalues
     a, b = np.sqrt(np.maximum(eigenvalues, 0))  # guard tiny negatives
-
+    
     # Area of ellipse
     area = np.pi * a * b
+
+    save_relative_cov_ellipse_from_center_cov(center, cov_matrix, relative_points, out_path=f"ellipses/ellipse_{metadata}_outliers{sum(dists > outliers_distance)}_area{int(area)}.png")
     return area
 
 # -----------------------------
@@ -214,8 +324,9 @@ def ellipse_area_in_group(g):
         return pd.Series({"ellipse_area_px2": np.nan, "ellipse_points": len(arr)})
     click = arr[["ClickX","ClickY"]].to_numpy()
     obj   = arr[["TargetX","TargetY"]].to_numpy()
+    metadata = "_".join([str(x) for x in [group_cols, g.name, "points:", len(arr)]])
     try:
-        area = confidence_ellipse_area_relative(click, obj)
+        area = confidence_ellipse_area_relative(click, obj, metadata=metadata)
     except Exception:
         area = np.nan
     return pd.Series({"ellipse_area_px2": area, "ellipse_points": len(arr)})
@@ -241,7 +352,8 @@ by_type_targets.to_csv(OUTPUT_DIR / "summary_by_type_n_targets.csv", index=False
 
 # Successful trials only
 df_succ = df[df["Success"] == 1].copy()
-
+df_not_only_succ = df.copy()
+#df_all = df.copy()
 def ellipse_area_for_participant(g):
     needed = {"ClickX","ClickY","TargetX","TargetY"}
     if not needed.issubset(g.columns):
@@ -251,7 +363,8 @@ def ellipse_area_for_participant(g):
         return np.nan
     click = arr[["ClickX","ClickY"]].to_numpy()
     obj   = arr[["TargetX","TargetY"]].to_numpy()
-    return confidence_ellipse_area_relative(click, obj)
+    metadata = "_".join([str(x) for x in [group_cols, g.name, "points:", len(arr)]])
+    return confidence_ellipse_area_relative(click, obj, metadata=metadata)
 
 participant_ellipses = (
     df_succ.groupby(["ID", "Type", "N_targets"], dropna=False)
@@ -259,7 +372,14 @@ participant_ellipses = (
            .reset_index(name="ellipse_area_px2")
 )
 
-participant_ellipses.to_csv(OUTPUT_DIR / "ellipse_area_per_participant.csv", index=False)
+participant_ellipses_not_only_succ = (
+    df_not_only_succ.groupby(["ID", "Type", "N_targets"], dropna=False)
+           .apply(ellipse_area_for_participant)
+           .reset_index(name="ellipse_area_px2")
+)
+
+participant_ellipses.to_csv(OUTPUT_DIR / "ellipse_area_per_participant_success.csv", index=False)
+participant_ellipses_not_only_succ.to_csv(OUTPUT_DIR / "ellipse_area_per_participant.csv", index=False)
 
 # Base per-participant (all trials): trials and success_rate
 per_participant_base = (df
@@ -361,8 +481,8 @@ if "Task_time_guess_mean" in by_type_targets.columns:
 # -----------------------------
 # Console preview
 # -----------------------------
-print("\n=== Summary by Type & N_targets (top 20 rows) ===")
-print(by_type_targets.head(20).to_string(index=False))
+#print("\n=== Summary by Type & N_targets (top 20 rows) ===")
+#print(by_type_targets.head(20).to_string(index=False))
 print("\nSaved files in:", OUTPUT_DIR.resolve())
 
 # -------------------------------------------------------------------------
