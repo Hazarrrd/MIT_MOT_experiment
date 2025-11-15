@@ -19,6 +19,11 @@ TASK_ORDER_DEFAULT = ["MIT", "MOT"]
 LOAD_COLOR_MAP = {"LOW": "tab:green", "MID": "tab:orange", "HIGH": "tab:purple"}
 TASK_COLOR_MAP = {"MIT": "tab:blue", "MOT": "tab:orange"}
 SIGNIFICANCE_EFFECTS = ["Load", "TaskType", "TaskType*Load"]
+ELLIPSE_OUTLIER_VARIANTS = [
+    "_mode-none",
+    "_mode-radius",
+    "_mode-std",
+]
 
 def coerce_numeric(df, skip_cols=None):
     skip = set(skip_cols or [])
@@ -30,6 +35,16 @@ def coerce_numeric(df, skip_cols=None):
 
 def process_experiment_data(input_csv: str, output_excel: str, csv_output_folder="data/subsheets", success=True):
     os.makedirs(csv_output_folder, exist_ok=True)
+    csv_output_folder_std = f"{csv_output_folder}_std"
+    os.makedirs(csv_output_folder_std, exist_ok=True)
+    excel_base, excel_ext = os.path.splitext(output_excel)
+    output_excel_std = f"{excel_base}_std{excel_ext or '.xlsx'}"
+    rms_groups = {
+        "sh_TNA_rms": ["sh_TNA_t1", "sh_TNA_t2", "sh_TNA_t3", "sh_TNA_t4", "sh_TNA_t5"],
+        "sh_TNP_rms": ["sh_TNP_t1", "sh_TNP_t2", "sh_TNP_t3", "sh_TNP_t4", "sh_TNP_t5"],
+        "el_TNA_rms": ["el_TNA_t1", "el_TNA_t2", "el_TNA_t3", "el_TNA_t4", "el_TNA_t5"],
+        "el_TNP_rms": ["el_TNP_t1", "el_TNP_t2", "el_TNP_t3", "el_TNP_t4", "el_TNP_t5"],
+    }
     exclude_cols = [
         "Experiment", "ID", "Sex", "Age", "Block", "Trial", "Type", "Is_training",
         "N_targets", "N_distractors", "N_circles", "Timestamp", "Ground_truth_guess",
@@ -37,7 +52,7 @@ def process_experiment_data(input_csv: str, output_excel: str, csv_output_folder
         "10a.png","10b.png","11a.png","11b.png",
         "1a.png","1b.png","2a.png","2b.png","3a.png","3b.png","4a.png","4b.png",
         "5a.png","5b.png","6a.png","6b.png","7a.png","7b.png","8a.png","8b.png",
-        "9a.png","9b.png"
+        "9a.png","9b.png", "tau_t1","tau_t2","tau_t3","tau_t4","tau_t5"
     ]
     df = pd.read_csv(input_csv)
 
@@ -86,28 +101,56 @@ def process_experiment_data(input_csv: str, output_excel: str, csv_output_folder
     
     target_columns = [c for c in df.columns if c not in exclude_cols]
 
-    with pd.ExcelWriter(output_excel, engine="openpyxl") as writer:
+    with pd.ExcelWriter(output_excel, engine="openpyxl") as mean_writer, \
+         pd.ExcelWriter(output_excel_std, engine="openpyxl") as std_writer:
         for col in target_columns:
             tmp = df[["Experiment", "Type", "N_targets", col]].copy()
+            grouped = tmp.groupby(["Experiment", "Type", "N_targets"])[col]
 
-            # convert to numeric, invalid -> NaN
-          #  tmp[col] = pd.to_numeric(tmp[col], errors="coerce")
-           # tmp[col] = tmp[col].replace(-1, np.nan)
-
-            pivot = (
-                tmp.groupby(["Experiment", "Type", "N_targets"])[col]
-                .mean()
-                .unstack(level=["Type", "N_targets"])
-            )
+            pivot_mean = grouped.mean().unstack(level=["Type", "N_targets"])
+            pivot_std = grouped.std().unstack(level=["Type", "N_targets"])
 
             # flatten MultiIndex to one row: MIT_1, MIT_2, MOT_3...
-            pivot.columns = [f"{t}_{n}" for (t, n) in pivot.columns]
+            pivot_mean.columns = [f"{t}_{n}" for (t, n) in pivot_mean.columns]
+            pivot_std.columns = [f"{t}_{n}" for (t, n) in pivot_std.columns]
 
-            pivot.to_excel(writer, sheet_name=str(col)[:31])
-            csv_path = os.path.join(csv_output_folder, f"{col}.csv")
-            pivot.to_csv(csv_path, index=True)
+            sheet_name = str(col)[:31]
+            pivot_mean.to_excel(mean_writer, sheet_name=sheet_name)
+            pivot_std.to_excel(std_writer, sheet_name=sheet_name)
 
-    print(f"✅ Exported {len(target_columns)} sheets to {output_excel}")
+            pivot_mean.to_csv(os.path.join(csv_output_folder, f"{col}.csv"), index=True)
+            pivot_std.to_csv(os.path.join(csv_output_folder_std, f"{col}.csv"), index=True)
+
+    csv_output_folder_rms = f"{csv_output_folder}_rms"
+    os.makedirs(csv_output_folder_rms, exist_ok=True)
+    output_excel_rms = f"{excel_base}_rms{excel_ext or '.xlsx'}"
+
+    with pd.ExcelWriter(output_excel_rms, engine="openpyxl") as rms_writer:
+        rms_count = 0
+        for label, cols in rms_groups.items():
+            present_cols = [c for c in cols if c in df.columns]
+            if not present_cols:
+                continue
+            tmp = df[["Experiment", "Type", "N_targets"] + present_cols].copy()
+            grouped = tmp.groupby(["Experiment", "Type", "N_targets"])
+            var_values = grouped[present_cols].var()
+            if var_values.empty:
+                continue
+            mean_var = var_values.mean(axis=1, skipna=True)
+            rms_series = np.sqrt(mean_var)
+            pivot_rms = rms_series.unstack(level=["Type", "N_targets"])
+            pivot_rms.columns = [f"{t}_{n}" for (t, n) in pivot_rms.columns]
+
+            sheet_name = label[:31]
+            pivot_rms.to_excel(rms_writer, sheet_name=sheet_name)
+            pivot_rms.to_csv(os.path.join(csv_output_folder_rms, f"{label}.csv"), index=True)
+            rms_count += 1
+
+    print(
+        f"✅ Exported {len(target_columns)} sheets to {output_excel} (mean) "
+        f"and {output_excel_std} (std); "
+        f"{rms_count} RMS sheets to {output_excel_rms}"
+    )
 
 def transform_for_anova(input_csv: str, output_csv: str):
     """
@@ -207,7 +250,7 @@ def _significance_title_fragment(sig: bool | None, p_value: float | None) -> str
 
 def _plot_load_effect(summary: pd.DataFrame, metric: str, output_dir: str, tasks_order: list[str],
                       loads_order: list[str], load_index: dict[str, int],
-                      sig_info: tuple[bool | None, float | None]) -> None:
+                      sig_info: tuple[bool | None, float | None], display_metric: str | None = None) -> None:
     if len(loads_order) < 2 or not tasks_order:
         return
 
@@ -231,25 +274,26 @@ def _plot_load_effect(summary: pd.DataFrame, metric: str, output_dir: str, tasks
         sig, p_val = sig_info
         suffix = _significance_suffix(sig)
         sig_fragment = _significance_title_fragment(sig, p_val)
+        metric_label = display_metric or metric
         if sig_fragment:
-            title = f"{metric} - Load comparison ({sig_fragment})"
+            title = f"{metric_label} - Load comparison ({sig_fragment})"
         else:
-            title = f"{metric} - Load comparison"
+            title = f"{metric_label} - Load comparison"
         ax.set_xticks(x_positions)
         ax.set_xticklabels(loads_order)
         ax.set_xlabel("Load")
-        ax.set_ylabel(metric)
+        ax.set_ylabel(metric_label)
         ax.grid(True, linestyle="--", alpha=0.3)
         ax.set_title(title)
         ax.legend(loc="best")
         fig.tight_layout()
-        fig.savefig(os.path.join(output_dir, f"{metric}_load{suffix}.png"), dpi=300)
+        fig.savefig(os.path.join(output_dir, f"{display_metric}_load{suffix}.png"), dpi=300)
     plt.close(fig)
 
 
 def _plot_tasktype_effect(summary: pd.DataFrame, metric: str, output_dir: str, tasks_order: list[str],
                           loads_order: list[str], task_index: dict[str, int],
-                          sig_info: tuple[bool | None, float | None]) -> None:
+                          sig_info: tuple[bool | None, float | None], display_metric: str | None = None) -> None:
     if len(tasks_order) < 2 or not loads_order:
         return
 
@@ -273,25 +317,26 @@ def _plot_tasktype_effect(summary: pd.DataFrame, metric: str, output_dir: str, t
         sig, p_val = sig_info
         suffix = _significance_suffix(sig)
         sig_fragment = _significance_title_fragment(sig, p_val)
+        metric_label = display_metric or metric
         if sig_fragment:
-            title = f"{metric} - TaskType comparison ({sig_fragment})"
+            title = f"{metric_label} - TaskType comparison ({sig_fragment})"
         else:
-            title = f"{metric} - TaskType comparison"
+            title = f"{metric_label} - TaskType comparison"
         ax.set_xticks(x_positions)
         ax.set_xticklabels(tasks_order)
         ax.set_xlabel("TaskType")
-        ax.set_ylabel(metric)
+        ax.set_ylabel(metric_label)
         ax.grid(True, linestyle="--", alpha=0.3)
         ax.set_title(title)
         ax.legend(loc="best")
         fig.tight_layout()
-        fig.savefig(os.path.join(output_dir, f"{metric}_tasktype{suffix}.png"), dpi=300)
+        fig.savefig(os.path.join(output_dir, f"{display_metric}_tasktype{suffix}.png"), dpi=300)
     plt.close(fig)
 
 
 def _plot_interaction(summary: pd.DataFrame, melted: pd.DataFrame, metric: str, output_dir: str,
                       tasks_order: list[str], loads_order: list[str], load_index: dict[str, int],
-                      sig_info: tuple[bool | None, float | None]) -> None:
+                      sig_info: tuple[bool | None, float | None], display_metric: str | None = None) -> None:
     if len(loads_order) < 2 or not tasks_order:
         return
 
@@ -348,23 +393,24 @@ def _plot_interaction(summary: pd.DataFrame, melted: pd.DataFrame, metric: str, 
         sig, p_val = sig_info
         suffix = _significance_suffix(sig)
         sig_fragment = _significance_title_fragment(sig, p_val)
+        metric_label = display_metric or metric
         if sig_fragment:
-            title = f"{metric} - TaskType × Load ({sig_fragment})"
+            title = f"{metric_label} - TaskType × Load ({sig_fragment})"
         else:
-            title = f"{metric} - TaskType × Load"
+            title = f"{metric_label} - TaskType × Load"
         ax.set_xticks(x_positions)
         ax.set_xticklabels(loads_order)
         ax.set_xlabel("Load")
-        ax.set_ylabel(metric)
+        ax.set_ylabel(metric_label)
         ax.grid(True, linestyle="--", alpha=0.3)
         ax.set_title(title)
         ax.legend(loc="best")
         fig.tight_layout()
-        fig.savefig(os.path.join(output_dir, f"{metric}_tasktype_load{suffix}.png"), dpi=300)
+        fig.savefig(os.path.join(output_dir, f"{display_metric}_tasktype_load{suffix}.png"), dpi=300)
     plt.close(fig)
 
 
-def generate_metric_plots(csv_folder: str, output_folder: str) -> None:
+def generate_metric_plots(csv_folder: str, output_folder: str, label_suffix: str = "") -> None:
     os.makedirs(output_folder, exist_ok=True)
 
     for fname in sorted(os.listdir(csv_folder)):
@@ -373,6 +419,7 @@ def generate_metric_plots(csv_folder: str, output_folder: str) -> None:
 
         fpath = os.path.join(csv_folder, fname)
         metric = os.path.splitext(fname)[0]
+        display_metric = f"{metric}{label_suffix}" if label_suffix else metric
 
         try:
             df = pd.read_csv(fpath)
@@ -421,6 +468,7 @@ def generate_metric_plots(csv_folder: str, output_folder: str) -> None:
             loads_order,
             load_index,
             sig_info.get("Load", (None, None)),
+            display_metric,
         )
         _plot_tasktype_effect(
             summary,
@@ -430,6 +478,7 @@ def generate_metric_plots(csv_folder: str, output_folder: str) -> None:
             loads_order,
             task_index,
             sig_info.get("TaskType", (None, None)),
+            display_metric,
         )
         _plot_interaction(
             summary,
@@ -440,6 +489,7 @@ def generate_metric_plots(csv_folder: str, output_folder: str) -> None:
             loads_order,
             load_index,
             sig_info.get("TaskType*Load", (None, None)),
+            display_metric,
         )
 
 def run_repeated_anova_for_csvs(csv_folder: str, summary_output: str):
@@ -557,10 +607,20 @@ if __name__ == "__main__":
             sufix = "_success"
         else:
             sufix = ""
-        transform_for_anova(f"/media/janek/T7/results_real/analysis_outputs/ellipse_area_per_participant{sufix}.csv",f"data/subsheets{sufix}/ellipse_area_per_participant{sufix}_wide.csv")
+        csv_output_folder = f"data/subsheets{sufix}"
+        os.makedirs(csv_output_folder, exist_ok=True)
+        ellipse_base = f"/media/janek/T7/results_real/analysis_outputs/ellipse_area_per_participant{sufix}"
+        for ellipse_variant in ELLIPSE_OUTLIER_VARIANTS:
+            ellipse_path = f"{ellipse_base}{ellipse_variant}.csv"
+            if not os.path.exists(ellipse_path):
+                continue
+            ellipse_out = os.path.join(
+                csv_output_folder,
+                f"ellipse_area_per_participant{sufix}{ellipse_variant}_wide.csv",
+            )
+            transform_for_anova(ellipse_path, ellipse_out)
         input_csv="/media/janek/T7/results_real/all_trials_concat.csv"
         output_excel=f"output_formated{sufix}.xlsx"
-        csv_output_folder="data/subsheets"+sufix
         
         process_experiment_data(
             input_csv=input_csv,
@@ -568,14 +628,23 @@ if __name__ == "__main__":
             csv_output_folder=csv_output_folder,
             success=success
         )
-        plots_dir = os.path.join("plots", f"metrics{sufix}")
-        generate_metric_plots(
-            csv_folder=csv_output_folder,
-            output_folder=plots_dir
-        )
-        run_repeated_anova_for_csvs(
-            csv_folder=csv_output_folder,
-            summary_output=f"data/anova_summary{sufix}.csv"
+        stats_variants = [
+            ("", csv_output_folder, ""),
+            ("_std", f"{csv_output_folder}_std", " (std dev)"),
+            ("_rms", f"{csv_output_folder}_rms", " (RMS)"),
+        ]
+        for variant_suffix, folder, label_suffix in stats_variants:
+            if not os.path.isdir(folder):
+                continue
+            variant_plots_dir = os.path.join("plots", f"metrics{sufix}{variant_suffix}")
+            generate_metric_plots(
+                csv_folder=folder,
+                output_folder=variant_plots_dir,
+                label_suffix=label_suffix
+            )
+            run_repeated_anova_for_csvs(
+                csv_folder=folder,
+                summary_output=f"data/anova_summary{sufix}{variant_suffix}.csv"
             )
 
     

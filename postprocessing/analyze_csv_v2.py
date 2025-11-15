@@ -18,6 +18,12 @@ KEY_METRICS = [
     "Age", "Task_time_guess", "Task_time_motoric", "Movement_start","Movement_duration", 
     "MT_s","PV","TE","PoL","AV","P2PV_pct","D2TPV_pct","D2TEM_pct","XYPV_x","XYPV_y","XYEM_x","XYEM_y","PathLen","sh_PV","sh_P2PV","sh_AV","sh_ROM","sh_AA","sh_SA","sh_AUMC","sh_AvgPh","el_PV","el_P2PV","el_AV","el_ROM","el_AA","el_SA","el_AUMC","el_AvgPh","coord_TLPV_pct","coord_CCJA","coord_ACRP_deg","SaEn_elbow","SaEn_shoulder","SaEn_ACRP","tau_t1","tau_t2","tau_t3","tau_t4","tau_t5","sh_TNA_t1","sh_TNA_t2","sh_TNA_t3","sh_TNA_t4","sh_TNA_t5","sh_TNP_t1","sh_TNP_t2","sh_TNP_t3","sh_TNP_t4","sh_TNP_t5","el_TNA_t1","el_TNA_t2","el_TNA_t3","el_TNA_t4","el_TNA_t5","el_TNP_t1","el_TNP_t2","el_TNP_t3","el_TNP_t4","el_TNP_t5"
 ]
+OUTLIER_MODES = [
+    ("none", "mode-none"),
+    ("radius", "mode-radius"),
+    ("std", "mode-std"),
+]
+DEFAULT_OUTLIER_MODE = "radius"
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -125,7 +131,13 @@ def save_relative_cov_ellipse_from_center_cov(
 # -----------------------------
 # Confidence ellipse function (as provided)
 # -----------------------------
-def confidence_ellipse_area_relative(click_points, object_points, metadata="", MOTORIC_RADIUS=98.30400000000003) -> float:
+def confidence_ellipse_area_relative(
+    click_points,
+    object_points,
+    metadata="",
+    MOTORIC_RADIUS=98.30400000000003,
+    outlier_mode: str = "radius",
+) -> float:
     """
     Calculates the area of a confidence ellipse for clicks relative to object positions.
 
@@ -136,12 +148,16 @@ def confidence_ellipse_area_relative(click_points, object_points, metadata="", M
     object_points : array-like, shape (n_samples, 2)
         Coordinates of the object positions.
 
+    outlier_mode : {"none", "radius", "std"}, default "radius"
+        Mode for filtering outliers in radial distance. "none" keeps all points,
+        "radius" drops distances greater than 2 × MOTORIC_RADIUS, and "std"
+        drops distances greater than 3 × distance standard deviation.
+
     Returns
     -------
     float
         Area of the confidence ellipse.
     """
-    outliers_distance = 2*MOTORIC_RADIUS
     click_points = np.asarray(click_points, dtype=float)
     object_points = np.asarray(object_points, dtype=float)
 
@@ -152,8 +168,25 @@ def confidence_ellipse_area_relative(click_points, object_points, metadata="", M
     relative_points = click_points - object_points
 
     dists = np.linalg.norm(relative_points, axis=1)
-    keep = dists <= outliers_distance
-    relative_points = relative_points[keep]
+    keep_mask = np.ones_like(dists, dtype=bool)
+    outlier_threshold = None
+
+    if outlier_mode == "radius":
+        outlier_threshold = 2 * MOTORIC_RADIUS
+        keep_mask = dists <= outlier_threshold
+    elif outlier_mode == "std":
+        dist_std = np.std(dists)
+        if dist_std > 0:
+            outlier_threshold = 3 * dist_std
+            keep_mask = dists <= outlier_threshold
+    elif outlier_mode == "none":
+        pass
+    else:
+        raise ValueError("outlier_mode must be one of {'none','radius','std'}")
+
+    relative_points = relative_points[keep_mask]
+    if len(relative_points) < 3:
+        return np.nan
     
     # Mean center of relative positions
     center = relative_points.mean(axis=0)
@@ -173,7 +206,16 @@ def confidence_ellipse_area_relative(click_points, object_points, metadata="", M
     # Area of ellipse
     area = np.pi * a * b
 
-    save_relative_cov_ellipse_from_center_cov(center, cov_matrix, relative_points, out_path=f"ellipses/ellipse_{metadata}_outliers{sum(dists > outliers_distance)}_area{int(area)}.png")
+    removed = int((~keep_mask).sum())
+    outlier_info = f"mode{outlier_mode}"
+    if outlier_threshold is not None:
+        outlier_info += f"_thr{int(outlier_threshold)}"
+    save_relative_cov_ellipse_from_center_cov(
+        center,
+        cov_matrix,
+        relative_points,
+        out_path=f"ellipses/ellipse_{metadata}_{outlier_info}_removed{removed}_area{int(area)}.png",
+    )
     return area
 
 # -----------------------------
@@ -313,7 +355,7 @@ by_type_targets.sort_values(group_cols, inplace=True)
 # -----------------------------
 # NEW: Confidence-ellipse area per Type × N_targets
 # -----------------------------
-def ellipse_area_in_group(g):
+def ellipse_area_in_group(g, outlier_mode: str = DEFAULT_OUTLIER_MODE):
     """Return ellipse area (pixel^2) of Click relative to Target in group."""
     needed = {"ClickX","ClickY","TargetX","TargetY"}
     if not needed.issubset(g.columns):
@@ -324,26 +366,28 @@ def ellipse_area_in_group(g):
         return pd.Series({"ellipse_area_px2": np.nan, "ellipse_points": len(arr)})
     click = arr[["ClickX","ClickY"]].to_numpy()
     obj   = arr[["TargetX","TargetY"]].to_numpy()
-    metadata = "_".join([str(x) for x in [group_cols, g.name, "points:", len(arr)]])
+    metadata = "_".join([str(x) for x in [group_cols, g.name, "points:", len(arr), f"mode:{outlier_mode}"]])
     try:
-        area = confidence_ellipse_area_relative(click, obj, metadata=metadata)
+        area = confidence_ellipse_area_relative(click, obj, metadata=metadata, outlier_mode=outlier_mode)
     except Exception:
         area = np.nan
     return pd.Series({"ellipse_area_px2": area, "ellipse_points": len(arr)})
 
-ellipse_by_group = (
-    df[df["Success"] == 1]  # only successes
-    .groupby(group_cols, dropna=False)
-    .apply(ellipse_area_in_group)
-    .reset_index()
-)
-
-
-# Merge into main summary
-by_type_targets = by_type_targets.merge(ellipse_by_group, on=group_cols, how="left")
-
-# Save summaries
+ellipse_summaries: dict[str, pd.DataFrame] = {}
 OUTPUT_DIR.mkdir(exist_ok=True)
+for mode, tag in OUTLIER_MODES:
+    ellipse_by_group = (
+        df[df["Success"] == 1]  # only successes
+        .groupby(group_cols, dropna=False)
+        .apply(lambda g, m=mode: ellipse_area_in_group(g, outlier_mode=m))
+        .reset_index()
+    )
+    merged = by_type_targets.merge(ellipse_by_group, on=group_cols, how="left")
+    ellipse_summaries[mode] = merged
+    merged.to_csv(OUTPUT_DIR / f"summary_by_type_n_targets_{tag}.csv", index=False)
+
+# Keep default mode for downstream compatibility and legacy filename
+by_type_targets = ellipse_summaries.get(DEFAULT_OUTLIER_MODE, by_type_targets.copy())
 by_type_targets.to_csv(OUTPUT_DIR / "summary_by_type_n_targets.csv", index=False)
 
 # -----------------------------
@@ -354,7 +398,7 @@ by_type_targets.to_csv(OUTPUT_DIR / "summary_by_type_n_targets.csv", index=False
 df_succ = df[df["Success"] == 1].copy()
 df_not_only_succ = df.copy()
 #df_all = df.copy()
-def ellipse_area_for_participant(g):
+def ellipse_area_for_participant(g, outlier_mode: str = DEFAULT_OUTLIER_MODE):
     needed = {"ClickX","ClickY","TargetX","TargetY"}
     if not needed.issubset(g.columns):
         return np.nan
@@ -363,23 +407,34 @@ def ellipse_area_for_participant(g):
         return np.nan
     click = arr[["ClickX","ClickY"]].to_numpy()
     obj   = arr[["TargetX","TargetY"]].to_numpy()
-    metadata = "_".join([str(x) for x in [group_cols, g.name, "points:", len(arr)]])
-    return confidence_ellipse_area_relative(click, obj, metadata=metadata)
+    metadata = "_".join([str(x) for x in [group_cols, g.name, "points:", len(arr), f"mode:{outlier_mode}"]])
+    return confidence_ellipse_area_relative(click, obj, metadata=metadata, outlier_mode=outlier_mode)
 
-participant_ellipses = (
-    df_succ.groupby(["ID", "Type", "N_targets"], dropna=False)
-           .apply(ellipse_area_for_participant)
-           .reset_index(name="ellipse_area_px2")
-)
+participant_ellipses_by_mode: dict[str, pd.DataFrame] = {}
+participant_ellipses_all_trials_by_mode: dict[str, pd.DataFrame] = {}
+for mode, tag in OUTLIER_MODES:
+    part_succ = (
+        df_succ.groupby(["ID", "Type", "N_targets"], dropna=False)
+               .apply(lambda g, m=mode: ellipse_area_for_participant(g, outlier_mode=m))
+               .reset_index(name="ellipse_area_px2")
+    )
+    part_all = (
+        df_not_only_succ.groupby(["ID", "Type", "N_targets"], dropna=False)
+               .apply(lambda g, m=mode: ellipse_area_for_participant(g, outlier_mode=m))
+               .reset_index(name="ellipse_area_px2")
+    )
+    part_succ.to_csv(OUTPUT_DIR / f"ellipse_area_per_participant_success_{tag}.csv", index=False)
+    part_all.to_csv(OUTPUT_DIR / f"ellipse_area_per_participant_{tag}.csv", index=False)
+    participant_ellipses_by_mode[mode] = part_succ
+    participant_ellipses_all_trials_by_mode[mode] = part_all
 
-participant_ellipses_not_only_succ = (
-    df_not_only_succ.groupby(["ID", "Type", "N_targets"], dropna=False)
-           .apply(ellipse_area_for_participant)
-           .reset_index(name="ellipse_area_px2")
-)
-
-participant_ellipses.to_csv(OUTPUT_DIR / "ellipse_area_per_participant_success.csv", index=False)
-participant_ellipses_not_only_succ.to_csv(OUTPUT_DIR / "ellipse_area_per_participant.csv", index=False)
+# Keep default mode for downstream steps and legacy filenames
+participant_ellipses = participant_ellipses_by_mode.get(DEFAULT_OUTLIER_MODE)
+participant_ellipses_not_only_succ = participant_ellipses_all_trials_by_mode.get(DEFAULT_OUTLIER_MODE)
+if participant_ellipses is not None:
+    participant_ellipses.to_csv(OUTPUT_DIR / "ellipse_area_per_participant_success.csv", index=False)
+if participant_ellipses_not_only_succ is not None:
+    participant_ellipses_not_only_succ.to_csv(OUTPUT_DIR / "ellipse_area_per_participant.csv", index=False)
 
 # Base per-participant (all trials): trials and success_rate
 per_participant_base = (df
@@ -433,7 +488,21 @@ if not logit_df.empty:
 # -----------------------------
 # Plots
 # -----------------------------
-# 1) Success rate vs N_targets with 95% CI
+def _plot_ellipse_area(summary_df: pd.DataFrame, out_path: Path) -> None:
+    if summary_df is None or "ellipse_area_px2" not in summary_df.columns:
+        return
+    plt.figure()
+    for t, sub in summary_df.dropna(subset=["Type"]).groupby("Type"):
+        plt.plot(sub["N_targets"].values, sub["ellipse_area_px2"].values, "o-", label=t)
+    plt.xlabel("N_targets")
+    plt.ylabel("Confidence-ellipse area (pixel²)")
+    plt.title("Click dispersion (relative to object) by Type and N_targets")
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.savefig(out_path, dpi=200)
+
+# 1) Success rate vs N_targets with 95% CI (mode-independent)
 plt.figure()
 for t, sub in by_type_targets.dropna(subset=["Type"]).groupby("Type"):
     x = sub["N_targets"].values
@@ -449,18 +518,14 @@ plt.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.savefig(OUTPUT_DIR / "success_rate_by_type_n_targets.png", dpi=200)
 
-# 2) Ellipse area vs N_targets (pixel^2)
-if "ellipse_area_px2" in by_type_targets.columns:
-    plt.figure()
-    for t, sub in by_type_targets.dropna(subset=["Type"]).groupby("Type"):
-        plt.plot(sub["N_targets"].values, sub["ellipse_area_px2"].values, "o-", label=t)
-    plt.xlabel("N_targets")
-    plt.ylabel("Confidence-ellipse area (pixel²)")
-    plt.title("Click dispersion (relative to object) by Type and N_targets")
-    plt.legend()
-    plt.grid(True, alpha=0.3)
-    plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / "ellipse_area_by_type_n_targets.png", dpi=200)
+# 2) Ellipse area vs N_targets (pixel^2), per mode
+_plot_ellipse_area(by_type_targets, OUTPUT_DIR / "ellipse_area_by_type_n_targets.png")
+for mode, tag in OUTLIER_MODES:
+    summary_mode = ellipse_summaries.get(mode)
+    if summary_mode is None:
+        continue
+    filename = "ellipse_area_by_type_n_targets.png" if mode == DEFAULT_OUTLIER_MODE else f"ellipse_area_by_type_n_targets_{tag}.png"
+    _plot_ellipse_area(summary_mode, OUTPUT_DIR / filename)
 
 # 3) Task_time_guess vs N_targets (mean ± SD)
 if "Task_time_guess_mean" in by_type_targets.columns:
