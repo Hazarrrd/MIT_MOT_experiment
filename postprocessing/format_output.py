@@ -607,7 +607,7 @@ if __name__ == "__main__":
             sufix = "_success"
         else:
             sufix = ""
-        csv_output_folder = f"data/subsheets{sufix}"
+        csv_output_folder = f"/media/janek/T7/results_real/data/subsheets{sufix}"
         os.makedirs(csv_output_folder, exist_ok=True)
         ellipse_base = f"/media/janek/T7/results_real/analysis_outputs/ellipse_area_per_participant{sufix}"
         for ellipse_variant in ELLIPSE_OUTLIER_VARIANTS:
@@ -620,7 +620,7 @@ if __name__ == "__main__":
             )
             transform_for_anova(ellipse_path, ellipse_out)
         input_csv="/media/janek/T7/results_real/all_trials_concat.csv"
-        output_excel=f"output_formated{sufix}.xlsx"
+        output_excel=f"/media/janek/T7/results_real/data/output_formated{sufix}.xlsx"
         
         process_experiment_data(
             input_csv=input_csv,
@@ -636,7 +636,7 @@ if __name__ == "__main__":
         for variant_suffix, folder, label_suffix in stats_variants:
             if not os.path.isdir(folder):
                 continue
-            variant_plots_dir = os.path.join("plots", f"metrics{sufix}{variant_suffix}")
+            variant_plots_dir = os.path.join("/media/janek/T7/results_real/plots", f"metrics{sufix}{variant_suffix}")
             generate_metric_plots(
                 csv_folder=folder,
                 output_folder=variant_plots_dir,
@@ -644,7 +644,7 @@ if __name__ == "__main__":
             )
             run_repeated_anova_for_csvs(
                 csv_folder=folder,
-                summary_output=f"data/anova_summary{sufix}{variant_suffix}.csv"
+                summary_output=f"/media/janek/T7/results_real/data/anova_summary{sufix}{variant_suffix}.csv"
             )
 
     
