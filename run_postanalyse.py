@@ -174,21 +174,39 @@ if __name__ == "__main__":
     if do_for_each_video:
         # Iterate over all subdirectories starting with "experiment_"
         for experiment_path in results_dir.glob("experiment_*"):
+            break
             if experiment_path.is_dir():
                 print(f"Running model inference for: {experiment_path}")
+                old_anomalies = experiment_path / "anomalies.csv"
+                if old_anomalies.exists():
+                    old_anomalies.unlink()
                # model_inference3D(str(experiment_path))
                 for filename in glob.glob(str(experiment_path / "videos" / "*")):
                     #continue
                    # get_metrics(experiment_path, Path(filename).stem)
                     do_kinematic_analyze(experiment_path, Path(filename).stem)
                 sumamrize_results(experiment_path)
-            break
+            
         
+        # Collect all per-experiment anomalies into one file
+        all_anomalies = []
+        for anomaly_file in results_dir.glob("experiment_*/anomalies.csv"):
+            df_a = pd.read_csv(anomaly_file)
+            df_a.insert(0, "experiment", anomaly_file.parent.name)
+            all_anomalies.append(df_a)
+        if all_anomalies:
+            combined = pd.concat(all_anomalies, ignore_index=True)
+            combined_path = results_dir / "all_anomalies.csv"
+            combined.to_csv(combined_path, index=False)
+            print(f"⚠️ Zbiorczy plik anomalii ({len(combined)} wpisów): {combined_path}")
+        else:
+            print("✅ Brak anomalii we wszystkich eksperymentach")
+
         # Run the process and wait for it to complete
-      #  process = subprocess.Popen("python3 postprocessing/analyze_csv.py", shell=True)
-      ##  process.wait()
-      #  process = subprocess.Popen("python3 postprocessing/analyze_csv_v2.py", shell=True)
-      #  process.wait()
+        process = subprocess.Popen("python3 postprocessing/analyze_csv.py", shell=True)
+        process.wait()
+        process = subprocess.Popen("python3 postprocessing/analyze_csv_v2.py", shell=True)
+        process.wait()
     else:
         experiment = "/home/janek/psychologia/MIT_MOT_experiment/results/experiment_2025-03-08-18-00-32_TEST/"
         experiment = "/home/janek/Downloads/k2/"

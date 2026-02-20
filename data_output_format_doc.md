@@ -1,9 +1,140 @@
-# Dokumentacja Danych Eksperymentu
+# Dokumentacja Eksperymentu MIT/MOT
 
-## Przegląd
-Ten dokument opisuje strukturę danych CSV używaną do przechowywania wyników eksperymentu MIT/MOT. 
+## Opis Badania
 
-## Struktura Danych
+### 1. Cel badania
+
+Badanie ma na celu pomiar zdolności uwagowego śledzenia wielu obiektów (**MOT** — Multiple Object Tracking) oraz śledzenia wielu tożsamości (**MIT** — Multiple Identity Tracking) w powiązaniu z koordynacją wzrokowo-motoryczną. Każda próba łączy zadanie percepcyjne z zadaniem motorycznym, co pozwala jednocześnie ocenić zarówno sprawność uwagi wzrokowej, jak i precyzję oraz dynamikę ruchu kończyny górnej.
+
+### 2. Uczestnicy
+
+Przed rozpoczęciem eksperymentu każdy uczestnik wypełnia formularz demograficzny (PsychoPy GUI), podając:
+- **ID** uczestnika
+- **Płeć** (Kobieta / Mężczyzna / Nie chcę podawać)
+- **Wiek**
+
+### 3. Aparatura
+
+- **Oprogramowanie:** PsychoPy (Python)
+- **Ekran:** monitor dotykowy, tryb pełnoekranowy
+- **Kamera internetowa:** 1280×720 px, 60 fps (MJPEG), uruchamiana automatycznie w trakcie zadania motorycznego — rejestruje obraz uczestnika w celu późniejszej estymacji pozy ciała (3D pose estimation, model RTMPose3D / RTMDet)
+- **Urządzenie wejściowe:** ekran dotykowy + dedykowany klawisz, na którym uczestnik trzyma palec wskazujący między zadaniami
+
+### 4. Warunki eksperymentalne
+
+Eksperyment składa się z dwóch typów zadań realizowanych w ramach oddzielnych bloków:
+
+| Parametr | MOT | MIT |
+|---|---|---|
+| **Obiekty** | Identyczne czarne koła | Unikalne kształty (obrazki PNG — pary a/b, 11 zestawów) |
+| **Liczba celów (N_targets)** | 2, 3, 4 | 1, 2, 3 |
+| **Liczba kół satelitarnych** | 5 | 5 |
+| **Liczba dystraktorów** | 2×5 − N_targets | 2×5 − N_targets |
+| **Identyfikacja tożsamości** | Nie | Tak (dodatkowe zadanie) |
+
+Obciążenie poznawcze (Load) definiowane jest jako:
+- **LOW:** MIT_1 / MOT_2
+- **MID:** MIT_2 / MOT_3
+- **HIGH:** MIT_3 / MOT_4
+
+### 5. Struktura sesji eksperymentalnej
+
+1. **Blok treningowy:** 12 prób MIT + 12 prób MOT (kolejność losowa)
+2. **Bloki eksperymentalne:** 2 pary bloków × 60 prób = **240 prób** (120 MIT + 120 MOT)
+   - Kolejność bloków (MIT-first vs MOT-first) jest losowana per uczestnik
+   - Wewnątrz bloku rozkład wariantów trudności (N_targets) jest zrównoważony i randomizowany
+3. **Przerwy:** Między blokami uczestnik może odpocząć
+
+### 6. Przebieg pojedynczej próby
+
+Każda próba składa się z 5 faz:
+
+#### Faza 1 — Obserwacja (1.5 s)
+Obiekty (cele oznaczone zielonymi obwódkami + dystraktory) są nieruchome. Uczestnik zapamiętuje, które obiekty są celami.
+- *W MIT:* obiekty mają unikalne kształty widoczne w tej fazie.
+
+#### Faza 2 — Śledzenie (6 s)
+Oznaczenia znikają. W MIT obiekty zostają zakryte identycznymi czarnymi kołami. Wszystkie obiekty poruszają się po złożonych trajektoriach:
+- Obiekty krążą parami wokół mniejszych kół satelitarnych (częstotliwość: **0.45 Hz**)
+- Koła satelitarne krążą wokół centralnego punktu (częstotliwość: **0.1 Hz**)
+- W losowym momencie (z przedziału 1 s – 6 s) każde koło satelitarne może odwrócić kierunek obrotu
+- Kierunki obrotu, offsety kątowe i orientacje par obiektów są randomizowane
+
+#### Faza 3 — Zadanie motoryczne
+Jeden losowo wybrany obiekt zostaje oznaczony niebieską obwódką (1.5 s). Potem obiekty znikają i pojawia się osobne czarne koło z białym krzyżykiem (+) poruszające się po okręgu (częstotliwość: **0.35 Hz**, promień: ~2× promień kół satelitarnych). Kierunek poruszania zmienia się losowo raz w trakcie próby.
+
+Uczestnik musi:
+1. Zwolnić trzymany klawisz (rejestracja **Movement_start**)
+2. Dotknąć ekranu w miejscu poruszającego się obiektu (rejestracja **ClickX, ClickY**)
+
+Mierzone zmienne motoryczne:
+- Czas reakcji (`Movement_start`)
+- Czas trwania ruchu (`Movement_duration`)
+- Znormalizowany dystans euklidesowy (`Norm_Euc_Dist`)
+- Wektor prędkości obiektu w momencie kliknięcia (`Motoric_obj_Vx`, `Motoric_obj_Vy`, `V1_magnitude`)
+- Wektor kliknięcia (`V2_magnitude`)
+- Kąt między wektorami (`Angle_objV_click`)
+
+**Limit czasu:** 10 s. W trakcie tej fazy kamera nagrywa obraz uczestnika (od momentu puszczenia klawisza).
+
+#### Faza 4 — Kategoryzacja: Cel czy Dystraktor
+Na ekranie pojawiają się dwa koła (zielone = cel, czerwone = dystraktor), których pozycja jest losowana (lewo/prawo). Uczestnik dotyka odpowiedniego koła.
+- **Limit czasu:** 4 s
+- Rejestrowane: `Ground_truth_guess`, `Guess`, `Guess_success`, `Task_time_guess`
+
+#### Faza 5 — Identyfikacja tożsamości (tylko MIT)
+Obiekty zostają odkryte (ponownie widoczne unikalne kształty) i rozmieszczone w okręgu. Uczestnik wskazuje, który konkretny kształt ukrywał się pod oznaczonym niebieską obwódką kołem:
+- Wybór poprawnego obiektu = sukces identyfikacji (`MIT_obj_identified = 1`)
+- Wybór czarnego koła na górze = "to był dystraktor" (`MIT_obj_identified = 2`)
+- Niepoprawny wybór = błąd (`MIT_obj_identified = 0`)
+- **Limit czasu:** 8 s
+
+### 7. Parametry ruchu obiektów
+
+| Parametr | Wartość |
+|---|---|
+| Rozdzielczość ekranu | 1280 × 1024 px |
+| FPS | 60 |
+| Promień głównego koła (`circle_radius`) | 286.72 px |
+| Promień kół satelitarnych (`small_circle_radius`) | 114.69 px |
+| Promień obiektów (`obj_radius`) | 32.77 px |
+| Częstotliwość obrotu obiektów (`hz_target`) | 0.45 Hz |
+| Częstotliwość obrotu kół satelitarnych (`hz_circle`) | 0.1 Hz |
+| Częstotliwość obrotu obiektu motorycznego (`hz_motoric`) | 0.35 Hz |
+| Promień obiektu motorycznego (`motoric_radius`) | 98.30 px |
+| Promień orbity motorycznej (`motoric_circle_radius`) | 229.38 px |
+| Czas obserwacji (`observation_time`) | 1.5 s |
+| Czas śledzenia (`tracking_time`) | 6 s |
+| Czas oznaczenia obiektu (`guessing_time`) | 1.5 s |
+| Limit czasu — zadanie motoryczne (`motor_task_time_limit`) | 10 s |
+| Limit czasu — kategoryzacja cel/dystraktor (`answer_1_time_limit`) | 4 s |
+| Limit czasu — identyfikacja kształtu MIT (`answer_MIT_time_limit`) | 8 s |
+| Opóźnienie startu kamery (`camera_pause`) | 2.3 s |
+| Zmiana kierunku kół satelitarnych (`direction_changes`) | 1× losowo w przedziale [1 s, 6 s] |
+| Zmiana kierunku obiektu motorycznego (`direction_changes_motoric`) | 1× losowo w przedziale [1 s, 10 s] |
+| Zmiana kierunku głównego koła (`change_big_direction`) | Nie |
+| Losowe kierunki kół satelitarnych (`random_direction_small_circles`) | Tak |
+| Losowy kierunek głównego koła (`random_direction_big_circle`) | Tak |
+| Losowy offset target/dystraktor (`random_offset_target_distractor`) | Tak |
+| Losowy offset kół (`random_offset_circles`) | Tak |
+| Losowa orientacja par (`random_distractor_target_orientation`) | Tak |
+| Tryb obrazków MIT (`img_mode`) | Tak (pary a/b, 11 zestawów kształtów) |
+| Wyświetlanie kół satelitarnych (`show_circles`) | Nie |
+
+### 8. Post-processing
+
+Po zebraniu danych przeprowadzana jest automatyczna analiza obejmująca:
+1. **Estymacja pozy ciała 3D** (RTMPose3D + RTMDet) z nagrań kamer — ekstrakcja kątów łokciowych, ramiennych, metryk kinematycznych (PV, AV, MT, SaEn, PathLen itd.)
+2. **Detekcja anomalii:** zamrożone klatki (>5% bez ruchu), teleportacje (prędkość > median + 5×IQR, min. 50 cm/s), niestabilność długości kości (CV > 0.30)
+3. **Filtrowanie outlierów kliknięć:** dystans kliknięcia > 2×promień motoryczny lub > 3×SD
+4. **Analizy statystyczne:** ANOVA (repeated measures, Type × Load), t-testy, korelacje Spearmana, regresja logistyczna, korekta FDR (Benjamini-Hochberg), elipsy ufności dyspersji kliknięć
+
+---
+
+## Dokumentacja Danych CSV
+
+### Przegląd
+Ten dokument opisuje strukturę danych CSV używaną do przechowywania wyników eksperymentu MIT/MOT.
 Każdy wpis w zestawie danych zawiera następujące pola:
 
 ### Informacje o Uczestniku

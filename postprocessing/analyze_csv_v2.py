@@ -241,7 +241,7 @@ def coerce_numeric(df, skip_cols=None):
     for c in df.columns:
         if c in skip:
             continue
-        df[c] = pd.to_numeric(df[c], errors="ignore")
+        df[c] = pd.to_numeric(df[c], errors="coerce")
     return df
 
 def safe_mean(x): 
@@ -254,6 +254,11 @@ def safe_std(x):
 # Load & clean
 # -----------------------------
 df = pd.read_csv(CSV_PATH, engine="python")
+if 'is_anomaly' in df.columns:
+    n_anomalies = int(df['is_anomaly'].sum())
+    if n_anomalies > 0:
+        print(f"⚠️ Odfiltrowano {n_anomalies} triali z anomaliami kinematycznymi")
+    df = df[df['is_anomaly'] != 1]
 df_dropped_task_1 = df[df['Guess_success'] == -1]
 df = df[df['Guess_success'] != -1]
 df_dropped_motoric = df[df['Movement_duration'] == -1]
@@ -282,7 +287,7 @@ df['MIT_obj_identified'] = df['MIT_obj_identified'].apply(clean_mit_obj_identifi
 
 df.columns = [c.strip().replace(" ", "_") for c in df.columns]
 if "Timestamp" in df.columns:
-    df["Timestamp"] = pd.to_datetime(df["Timestamp"], errors="coerce")
+    df["Timestamp"] = pd.to_datetime(df["Timestamp"], errors="coerce", utc=True)
 
 for cat_col in ["Experiment","ID","Sex","Type","Ground_truth_guess","Guess",
                 "Indicated_img","Img_to_guess"]:
@@ -290,7 +295,7 @@ for cat_col in ["Experiment","ID","Sex","Type","Ground_truth_guess","Guess",
         df[cat_col] = df[cat_col].astype(str)
 
 skip = {"Experiment","ID","Sex","Type","Ground_truth_guess","Guess",
-        "Timestamp","Indicated_img","Img_to_guess"}
+        "Timestamp","Indicated_img","Img_to_guess","anomaly_reasons"}
 df = coerce_numeric(df, skip_cols=skip)
 
 if "Type" in df.columns:
@@ -302,6 +307,44 @@ if "Is_training" in df.columns and EXCLUDE_TRAINING:
 
 if "N_targets" in df.columns:
     df["N_targets"] = pd.to_numeric(df["N_targets"], errors="coerce")
+
+# --- Flag click-distance outliers as anomalies ---
+MOTORIC_RADIUS = 98.30400000000003
+needed_cols = {"ClickX", "ClickY", "TargetX", "TargetY"}
+if needed_cols.issubset(df.columns):
+    click_xy = df[["ClickX", "ClickY"]].to_numpy(dtype=float)
+    target_xy = df[["TargetX", "TargetY"]].to_numpy(dtype=float)
+    click_dist = np.linalg.norm(click_xy - target_xy, axis=1)
+
+    if "is_anomaly" not in df.columns:
+        df["is_anomaly"] = 0
+    if "anomaly_reasons" not in df.columns:
+        df["anomaly_reasons"] = ""
+    df["anomaly_reasons"] = df["anomaly_reasons"].fillna("").astype(str)
+
+    # Method 1: radius-based
+    radius_outlier = click_dist > 2 * MOTORIC_RADIUS
+
+    # Method 2: std-based
+    dist_std = np.nanstd(click_dist)
+    std_outlier = click_dist > 3 * dist_std if dist_std > 0 else np.zeros(len(df), dtype=bool)
+
+    combined_outlier = radius_outlier | std_outlier
+    n_click_outliers = int(combined_outlier.sum())
+    if n_click_outliers > 0:
+        print(f"⚠️ Odfiltrowano {n_click_outliers} triali z outlierami kliknięć (radius/std)")
+        for idx in df.index[combined_outlier]:
+            reasons = []
+            if radius_outlier[df.index.get_loc(idx)]:
+                reasons.append(f"CLICK_RADIUS_OUTLIER(dist={click_dist[df.index.get_loc(idx)]:.1f}px)")
+            if std_outlier[df.index.get_loc(idx)]:
+                reasons.append(f"CLICK_STD_OUTLIER(dist={click_dist[df.index.get_loc(idx)]:.1f}px)")
+            existing = df.at[idx, "anomaly_reasons"]
+            new_reason = "; ".join(reasons)
+            df.at[idx, "anomaly_reasons"] = f"{existing}; {new_reason}" if existing else new_reason
+            df.at[idx, "is_anomaly"] = 1
+
+    df = df[df["is_anomaly"] != 1]
 
 # -----------------------------
 # Success (MOT vs MIT)

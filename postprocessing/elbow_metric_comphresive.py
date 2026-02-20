@@ -43,7 +43,7 @@ from kinematic_metrics import (
     D2T_metrics,
     shoulder_elevation_series, elbow_flexion_series, angle_velocity_metrics,
     time_lag_peak_velocity, cc_joint_angles, average_continuous_relative_phase,
-    time_normalized_metrics, time_normalize_angle_phase_samples, sample_entropy, norm_rows
+    time_normalized_metrics, time_normalize_angle_phase_samples, sample_entropy, norm_rows, detect_trial_anomalies
 )
 
 # ------------------------ I/O helpers ------------------------
@@ -186,6 +186,22 @@ def main(write_video=False,json_path=None, video_path=None, out_video_path=None,
     n_frames_vid = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     T = min(kp.shape[0], n_frames_vid)
     t = np.arange(T) / fps
+
+    # --- Anomaly detection ---
+    trial_name = Path(json_path).stem.replace("results_", "")
+    anomalies, trial_diagnostics = detect_trial_anomalies(t, kp[:T], trial_name, px_per_cm=px_per_cm)
+    if anomalies:
+        anomalies_file = Path(json_path).parent.parent.parent / "anomalies.csv"
+        file_exists = anomalies_file.exists()
+        with open(anomalies_file, "a", newline="") as f:
+            wcsv = csv.DictWriter(f, fieldnames=["trial", "type", "reason"])
+            if not file_exists:
+                wcsv.writeheader()
+            wcsv.writerows(anomalies)
+        for a in anomalies:
+            print(f"⚠️  [{trial_name}] {a['type']}: {a['reason']}")
+    else:
+        print(f"✅ {trial_name} OK")
 
     # --- Movement events: frame 0 to last frame ---
     events = make_events_from_frames(T, fps)
@@ -359,6 +375,9 @@ def main(write_video=False,json_path=None, video_path=None, out_video_path=None,
         rows[f"el_TNA_t{i}"] = v
     for i, v in enumerate(el_bins["TNP"], 1):
         rows[f"el_TNP_t{i}"] = v
+
+    rows["is_anomaly"] = trial_diagnostics.get("is_anomaly", 0)
+    rows["anomaly_reasons"] = trial_diagnostics.get("anomaly_reasons", "")
 
     with open(out_csv_path, "w", newline="") as f:
         wcsv = csv.writer(f)

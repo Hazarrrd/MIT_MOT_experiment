@@ -72,11 +72,30 @@ def process_experiment_data(input_csv: str, output_excel: str, csv_output_folder
     ]
     df = pd.read_csv(input_csv)
 
+    if 'is_anomaly' in df.columns:
+        n_anom = int(df['is_anomaly'].sum())
+        if n_anom > 0:
+            print(f"  ⚠️ Odfiltrowano {n_anom} triali z anomaliami kinematycznymi")
+        df = df[df['is_anomaly'] != 1]
 
     df = df[df["Is_training"] == 0]  
     df = df[df["Guess_success"] != -1]
     df = df[df['Movement_duration'] != -1]
     df = df[df['MIT_obj_identified'] != -1]
+
+    MOTORIC_RADIUS = 98.30400000000003
+    if {'ClickX', 'ClickY', 'TargetX', 'TargetY'}.issubset(df.columns):
+        click_xy = df[['ClickX', 'ClickY']].to_numpy(dtype=float)
+        target_xy = df[['TargetX', 'TargetY']].to_numpy(dtype=float)
+        click_dist = np.linalg.norm(click_xy - target_xy, axis=1)
+        radius_outlier = click_dist > 2 * MOTORIC_RADIUS
+        dist_std = np.nanstd(click_dist)
+        std_outlier = click_dist > 3 * dist_std if dist_std > 0 else np.zeros(len(df), dtype=bool)
+        combined = radius_outlier | std_outlier
+        n_click = int(combined.sum())
+        if n_click > 0:
+            print(f"  ⚠️ Odfiltrowano {n_click} triali z outlierami kliknięć")
+        df = df[~combined]
     def Pol_to_numbers(x):
         if x in ["before"]:
             return 1
@@ -84,7 +103,7 @@ def process_experiment_data(input_csv: str, output_excel: str, csv_output_folder
             return -1
     df['PoL'] = df['PoL'].apply(Pol_to_numbers)
     if "Timestamp" in df.columns:
-        df["Timestamp"] = pd.to_datetime(df["Timestamp"], errors="coerce")
+        df["Timestamp"] = pd.to_datetime(df["Timestamp"], errors="coerce", utc=True)
 
     def clean_mit_obj_identified(x):
         if x in [1, 2]:
@@ -97,7 +116,7 @@ def process_experiment_data(input_csv: str, output_excel: str, csv_output_folder
     df['MIT_obj_identified'] = pd.to_numeric(df['MIT_obj_identified'], errors='coerce')
     df['MIT_obj_identified'] = df['MIT_obj_identified'].apply(clean_mit_obj_identified)
     skip = {"Experiment","ID","Sex","Type","Ground_truth_guess","Guess",
-        "Timestamp","Indicated_img","Img_to_guess"}
+        "Timestamp","Indicated_img","Img_to_guess","anomaly_reasons"}
     
     df = coerce_numeric(df, skip_cols=skip)
 

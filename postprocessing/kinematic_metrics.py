@@ -629,6 +629,112 @@ def per_condition_std(values: Iterable[float]) -> float:
         return np.nan
     return float(np.nanstd(x, ddof=1))
 
+def detect_trial_anomalies(t: np.ndarray, keypoints_TxJxK: np.ndarray, trial_name: str, px_per_cm: Optional[float] = None) -> Tuple[List[Dict], Dict]:
+    anomalies = []
+    diagnostics = {"trial": trial_name}
+    T = len(t)
+    if T < 2:
+        anomalies.append({"trial": trial_name, "type": "TOO_SHORT", "reason": f"Only {T} frames"})
+        diagnostics["is_anomaly"] = 1
+        diagnostics["anomaly_reasons"] = "TOO_SHORT"
+        return anomalies, diagnostics
+
+    tracked_indices = {
+        "shoulder": RIGHT["shoulder"],
+        "elbow": RIGHT["elbow"],
+        "wrist": RIGHT["wrist"],
+        "hip": RIGHT["hip"],
+        "finger": RIGHT["end_of_finger"]
+    }
+
+    # --- Frozen frames ---
+    finger_xy = keypoints_TxJxK[:, RIGHT["end_of_finger"], :2]
+    diffs = np.linalg.norm(np.diff(finger_xy, axis=0), axis=1)
+
+    frozen_frames = int(np.sum(diffs < 1e-4))
+    frozen_ratio = frozen_frames / (T - 1)
+    diagnostics["frozen_ratio"] = round(frozen_ratio, 4)
+
+    if frozen_ratio > 0.05:
+        anomalies.append({
+            "trial": trial_name,
+            "type": "FROZEN_FRAMES",
+            "reason": f"{frozen_ratio*100:.1f}% frames frozen ({frozen_frames}/{T-1})"
+        })
+
+    # --- Teleportation (speed outliers) ---
+    dt = np.diff(t)
+    valid_dt = dt > 0
+    if not np.any(valid_dt):
+        anomalies.append({"trial": trial_name, "type": "DT_ERROR", "reason": "No valid time intervals"})
+        diagnostics["is_anomaly"] = 1
+        diagnostics["anomaly_reasons"] = "DT_ERROR"
+        return anomalies, diagnostics
+
+    dt_safe = dt.copy()
+    dt_safe[~valid_dt] = np.nanmean(dt[valid_dt])
+
+    for part_name, idx in tracked_indices.items():
+        if idx >= keypoints_TxJxK.shape[1]:
+            continue
+        xy = keypoints_TxJxK[:, idx, :2]
+        dist = np.linalg.norm(np.diff(xy, axis=0), axis=1)
+
+        speed = dist / dt_safe
+        if px_per_cm and px_per_cm > 0:
+            speed = speed / px_per_cm
+            unit = "cm/s"
+        else:
+            unit = "px/s"
+
+        q75, q25 = np.percentile(speed, [75, 25])
+        iqr = q75 - q25
+        median_speed = np.median(speed)
+        max_speed = float(np.nanmax(speed)) if len(speed) > 0 else 0.0
+
+        diagnostics[f"max_speed_{part_name}"] = round(max_speed, 2)
+        diagnostics[f"median_speed_{part_name}"] = round(median_speed, 2)
+
+        threshold = max(50.0, median_speed + 5 * iqr)
+        if max_speed > threshold:
+            anomalies.append({
+                "trial": trial_name,
+                "type": "TELEPORTATION",
+                "reason": f"{part_name} max={max_speed:.1f} {unit} > threshold={threshold:.1f} {unit} (median={median_speed:.1f}, iqr={iqr:.1f})"
+            })
+
+    # --- Bone length consistency ---
+    bone_segments = {
+        "shoulder_elbow": (RIGHT["shoulder"], RIGHT["elbow"]),
+        "elbow_wrist": (RIGHT["elbow"], RIGHT["wrist"]),
+    }
+    for seg_name, (idx_a, idx_b) in bone_segments.items():
+        if idx_a >= keypoints_TxJxK.shape[1] or idx_b >= keypoints_TxJxK.shape[1]:
+            continue
+        a_xy = keypoints_TxJxK[:, idx_a, :2]
+        b_xy = keypoints_TxJxK[:, idx_b, :2]
+        bone_lengths = np.linalg.norm(a_xy - b_xy, axis=1)
+
+        mean_len = np.mean(bone_lengths)
+        std_len = np.std(bone_lengths, ddof=1)
+        cv = (std_len / mean_len) if mean_len > 0 else 0.0
+
+        diagnostics[f"bone_{seg_name}_cv"] = round(cv, 4)
+        diagnostics[f"bone_{seg_name}_mean_px"] = round(mean_len, 2)
+
+        if cv > 0.30:
+            anomalies.append({
+                "trial": trial_name,
+                "type": "BONE_LENGTH_UNSTABLE",
+                "reason": f"{seg_name} CV={cv:.2f} (mean={mean_len:.1f}px, std={std_len:.1f}px)"
+            })
+
+    # --- Summary ---
+    diagnostics["is_anomaly"] = 1 if anomalies else 0
+    diagnostics["anomaly_reasons"] = "; ".join(a["type"] + ": " + a["reason"] for a in anomalies) if anomalies else ""
+
+    return anomalies, diagnostics
+
 # =========================
 # End of module
 # =========================

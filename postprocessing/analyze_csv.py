@@ -14,6 +14,11 @@ import numpy as np
 
 def analyze_single_experiment(csv_file_path):
     df = pd.read_csv(csv_file_path)
+    if 'is_anomaly' in df.columns:
+        n_anomalies = df['is_anomaly'].sum()
+        if n_anomalies > 0:
+            print(f"  ⚠️ Odfiltrowano {int(n_anomalies)} triali z anomaliami kinematycznymi")
+        df = df[df['is_anomaly'] != 1]
     df['Timestamp'] = pd.to_datetime(df['Timestamp'], format='%Y-%m-%d %H-%M-%S', errors='coerce')
     df_whole = df.copy()
     df_training = df[df['Is_training'] != 0]
@@ -33,6 +38,20 @@ def analyze_single_experiment(csv_file_path):
     df_dropped_task_2 = df[df['MIT_obj_identified'] == -1]
     df = df[df['MIT_obj_identified'] != -1]
 
+    # Filter click-distance outliers
+    MOTORIC_RADIUS = 98.30400000000003
+    if {'ClickX', 'ClickY', 'TargetX', 'TargetY'}.issubset(df.columns):
+        click_xy = df[['ClickX', 'ClickY']].to_numpy(dtype=float)
+        target_xy = df[['TargetX', 'TargetY']].to_numpy(dtype=float)
+        click_dist = np.linalg.norm(click_xy - target_xy, axis=1)
+        radius_outlier = click_dist > 2 * MOTORIC_RADIUS
+        dist_std = np.nanstd(click_dist)
+        std_outlier = click_dist > 3 * dist_std if dist_std > 0 else np.zeros(len(df), dtype=bool)
+        combined = radius_outlier | std_outlier
+        n_click_outliers = int(combined.sum())
+        if n_click_outliers > 0:
+            print(f"  ⚠️ Odfiltrowano {n_click_outliers} triali z outlierami kliknięć")
+        df = df[~combined]
 
     def clean_mit_obj_identified(x):
         if x in [1, 2]:
@@ -530,6 +549,148 @@ def analyze_concat_file(df, save_dir):
     else:
         print("Cannot create agreement table: 'Img_to_guess' or 'Indicated_img' columns are missing.")
     
+def generate_anomaly_report(result_path, experiments_dirs):
+    anomaly_rows = []
+    total_rows = []
+
+    for exp_path in experiments_dirs:
+        file_name = os.path.basename(exp_path)
+        csv_file_path = os.path.join(exp_path, f"{file_name}_joined.csv")
+        if not os.path.exists(csv_file_path):
+            continue
+        df = pd.read_csv(csv_file_path)
+        if 'is_anomaly' not in df.columns:
+            continue
+        df['Experiment'] = file_name
+        df['is_anomaly'] = pd.to_numeric(df['is_anomaly'], errors='coerce').fillna(0)
+        total_rows.append(df)
+        anom = df[df['is_anomaly'] == 1]
+        if not anom.empty:
+            anomaly_rows.append(anom)
+
+    if not total_rows:
+        print("⚠️ Brak danych do raportu anomalii")
+        return
+
+    df_all = pd.concat(total_rows, ignore_index=True)
+    df_anom = pd.concat(anomaly_rows, ignore_index=True) if anomaly_rows else pd.DataFrame()
+
+    report_dir = os.path.join(result_path, "anomaly_report")
+    os.makedirs(report_dir, exist_ok=True)
+
+    n_total = len(df_all)
+    n_anom = len(df_anom)
+    n_clean = n_total - n_anom
+
+    # --- 1. Summary ---
+    summary_rows = []
+    summary_rows.append({
+        'Category': 'OVERALL',
+        'Group': 'all',
+        'Total_trials': n_total,
+        'Anomalies': n_anom,
+        'Clean': n_clean,
+        'Anomaly_pct': round(100 * n_anom / n_total, 2) if n_total else 0,
+    })
+
+    for task_type in ['MIT', 'MOT']:
+        mask_all = df_all['Type'] == task_type
+        mask_anom = df_anom['Type'] == task_type if not df_anom.empty else pd.Series(dtype=bool)
+        t = int(mask_all.sum())
+        a = int(mask_anom.sum())
+        summary_rows.append({
+            'Category': 'Type',
+            'Group': task_type,
+            'Total_trials': t,
+            'Anomalies': a,
+            'Clean': t - a,
+            'Anomaly_pct': round(100 * a / t, 2) if t else 0,
+        })
+
+    for nt in sorted(df_all['N_targets'].dropna().unique()):
+        mask_all = df_all['N_targets'] == nt
+        mask_anom = df_anom['N_targets'] == nt if not df_anom.empty else pd.Series(dtype=bool)
+        t = int(mask_all.sum())
+        a = int(mask_anom.sum())
+        summary_rows.append({
+            'Category': 'N_targets',
+            'Group': int(nt),
+            'Total_trials': t,
+            'Anomalies': a,
+            'Clean': t - a,
+            'Anomaly_pct': round(100 * a / t, 2) if t else 0,
+        })
+
+    if 'anomaly_reasons' in df_anom.columns and not df_anom.empty:
+        reasons = df_anom['anomaly_reasons'].dropna().astype(str)
+        all_reasons = []
+        for r in reasons:
+            all_reasons.extend([x.strip() for x in r.split(';') if x.strip()])
+        from collections import Counter
+        reason_counts = Counter(all_reasons)
+        for reason, count in reason_counts.most_common():
+            summary_rows.append({
+                'Category': 'Reason',
+                'Group': reason,
+                'Total_trials': n_total,
+                'Anomalies': count,
+                'Clean': '',
+                'Anomaly_pct': round(100 * count / n_total, 2) if n_total else 0,
+            })
+
+    summary_df = pd.DataFrame(summary_rows)
+    summary_df.to_csv(os.path.join(report_dir, "anomaly_report_summary.csv"), index=False)
+
+    # --- 2. Per participant ---
+    participant_rows = []
+    id_col = 'ID' if 'ID' in df_all.columns else 'Experiment'
+    for exp_name, grp in df_all.groupby('Experiment'):
+        exp_id = grp[id_col].iloc[0] if id_col in grp.columns else exp_name
+        t = len(grp)
+        a = int(grp['is_anomaly'].sum())
+        a_mit = int(grp[(grp['is_anomaly'] == 1) & (grp['Type'] == 'MIT')].shape[0])
+        a_mot = int(grp[(grp['is_anomaly'] == 1) & (grp['Type'] == 'MOT')].shape[0])
+        row = {
+            'Experiment': exp_name,
+            'ID': exp_id,
+            'Total_trials': t,
+            'Anomalies': a,
+            'Anomaly_pct': round(100 * a / t, 2) if t else 0,
+            'Anomalies_MIT': a_mit,
+            'Anomalies_MOT': a_mot,
+        }
+        for nt in sorted(df_all['N_targets'].dropna().unique()):
+            sub = grp[(grp['is_anomaly'] == 1) & (grp['N_targets'] == nt)]
+            row[f'Anomalies_Nt{int(nt)}'] = len(sub)
+        if 'anomaly_reasons' in grp.columns:
+            anom_reasons = grp.loc[grp['is_anomaly'] == 1, 'anomaly_reasons'].dropna().astype(str)
+            row['Reasons'] = '; '.join(anom_reasons.unique()) if not anom_reasons.empty else ''
+        participant_rows.append(row)
+
+    part_df = pd.DataFrame(participant_rows).sort_values('Anomaly_pct', ascending=False)
+    part_df.to_csv(os.path.join(report_dir, "anomaly_report_per_participant.csv"), index=False)
+
+    # --- 3. Cross-tab Type × N_targets ---
+    if not df_anom.empty:
+        ct = pd.crosstab(
+            df_anom['Type'],
+            df_anom['N_targets'],
+            margins=True,
+            margins_name='Total'
+        )
+        ct.to_csv(os.path.join(report_dir, "anomaly_report_type_x_ntargets.csv"))
+
+        ct_all = pd.crosstab(df_all['Type'], df_all['N_targets'], margins=True, margins_name='Total')
+        ct_pct = (ct / ct_all * 100).round(2)
+        ct_pct.to_csv(os.path.join(report_dir, "anomaly_report_type_x_ntargets_pct.csv"))
+
+    print(f"\n📊 Anomaly Report:")
+    print(f"   Total trials: {n_total}")
+    print(f"   Anomalies:    {n_anom} ({100*n_anom/n_total:.1f}%)")
+    print(f"   Clean:        {n_clean} ({100*n_clean/n_total:.1f}%)")
+    print(f"   Saved to:     {report_dir}/")
+
+
 if __name__ == "__main__":
     all_experiments_summary = []
     all_trials = [] 
@@ -543,10 +704,11 @@ if __name__ == "__main__":
             summary = analyze_single_experiment(csv_file_path)
             all_experiments_summary.append(summary)
             
-            # Load full raw data of this experiment and add to full trials list
             df_trials = pd.read_csv(csv_file_path)
             df_trials = df_trials.loc[:, ~df_trials.columns.str.contains('^Unnamed')]
-            df_trials['Experiment'] = file_name  # Add experiment name as new column
+            if 'is_anomaly' in df_trials.columns:
+                df_trials = df_trials[df_trials['is_anomaly'] != 1]
+            df_trials['Experiment'] = file_name
             all_trials.append(df_trials)
         else:
             print(f"CSV file not found for {file_name}. Skipping.")
@@ -559,7 +721,6 @@ if __name__ == "__main__":
     else:
         print("No data collected.")
         
-    # Save all concatenated raw data (all trials together)
     if all_trials:
         all_trials_df = pd.concat(all_trials, ignore_index=True)
         cols = all_trials_df.columns.tolist()
@@ -574,3 +735,5 @@ if __name__ == "__main__":
         
     summary_output_full_path = final_analyse(summary_output_path, result_path)
     final_analyse_plots(summary_output_full_path, result_path)
+
+    generate_anomaly_report(result_path, experiments_dirs)
