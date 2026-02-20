@@ -1,2 +1,28 @@
-results
-__pycache__
+results/
+__pycache__/
+*.xlsx
+*.zip
+*.png
+.venv/
+uv.lock
+
+# Ignore experiment folders
+experiment_*/
+
+# Ignore data folders
+data/
+postprocessing/data/
+postprocessing/data_bak/
+
+# Ignore plotted outputs
+plots/
+postprocessing/plots/
+postprocessing/plots_bak/
+postprocessing/plots_only_sig/
+
+# Ignore outputs
+calibresult*.png
+chessboard_photos/
+icons_mit/icons_shapes/
+icons_mit/icons_shapes_b/
+requirements_no_cuda copy.txt

@@ -54,10 +54,10 @@ markupsafe==3.0.2
 matplotlib==3.7.0
 mdurl==0.1.2
 minio==7.2.15
-mmcv==2.1.0
-mmdet==3.2.0
-mmengine==0.10.5
-mmpose==1.3.2
+#mmcv==2.1.0
+#mmdet==3.2.0
+#mmengine==0.10.5
+#mmpose==1.3.2
 model-index==0.1.11
 mouseinfo==0.1.3
 moviepy==1.0.3
@@ -98,7 +98,7 @@ pymsgbox==1.0.9
 pyparallel==0.2.2
 pyparsing==3.2.0
 pyperclip==1.9.0
-pypi-search==1.2.1
+#pypi-search==1.2.1
 pyqt5==5.15.9
 pyqt5-qt5==5.15.2
 pyqt5-sip==12.11.1

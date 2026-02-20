@@ -32,7 +32,8 @@ def model_inference3D(path_to_experiment):
     #for video in glob.glob(os.path.join(path_to_experiment,'videos',"*")):
     video = os.path.join(path_to_experiment,'videos')
     print(video)
-    command = f"/home/janek/miniconda3/envs/bundesliga/bin/python pose_estimation/body3d_img2pose_demo.py /home/janek/numlabs/repozytoria/ext_2024_MOT_and_pose_research/models/det_models/rtmdet_m_640-8xb32_coco-person.py /home/janek/numlabs/repozytoria/ext_2024_MOT_and_pose_research/models/det_models/rtmdet_m_8xb32-100e_coco-obj365-person-235e8209.pth /home/janek/numlabs/repozytoria/ext_2024_MOT_and_pose_research/models/rtmpose/rtmw3d-l_8xb64_cocktail14-384x288.py /home/janek/numlabs/repozytoria/ext_2024_MOT_and_pose_research/models/rtmpose/rtmw3d-l_8xb64_cocktail14-384x288-794dbc78_20240626.pth --input {video} --save-predictions --output-root {os.path.join(path_to_experiment,'inference_results/3d')} --show-interval 0".split(" ")
+    #command = f"/home/janek/miniconda3/envs/bundesliga/bin/python pose_estimation/body3d_img2pose_demo.py /home/janek/numlabs/repozytoria/ext_2024_MOT_and_pose_research/models/det_models/rtmdet_m_640-8xb32_coco-person.py /home/janek/numlabs/repozytoria/ext_2024_MOT_and_pose_research/models/det_models/rtmdet_m_8xb32-100e_coco-obj365-person-235e8209.pth /home/janek/numlabs/repozytoria/ext_2024_MOT_and_pose_research/models/rtmpose/rtmw3d-l_8xb64_cocktail14-384x288.py /home/janek/numlabs/repozytoria/ext_2024_MOT_and_pose_research/models/rtmpose/rtmw3d-l_8xb64_cocktail14-384x288-794dbc78_20240626.pth --input {video} --save-predictions --output-root {os.path.join(path_to_experiment,'inference_results/3d')} --show-interval 0".split(" ")
+    command = f"/home/janek/miniconda3/envs/bundesliga/bin/python pose_estimation/body3d_img2pose_demo.py /media/janek/T7/models/rtmdet_m_640-8xb32_coco-person.py /media/janek/T7/models/rtmdet_m_8xb32-100e_coco-obj365-person-235e8209.pth /media/janek/T7/models/rtmw3d-l_8xb64_cocktail14-384x288.py /media/janek/T7/models/rtmw3d-l_8xb64_cocktail14-384x288-794dbc78_20240626.pth --input {video} --save-predictions --output-root {os.path.join(path_to_experiment,'inference_results/3d')} --show-interval 0".split(" ")
     process = subprocess.Popen(command)
     process.wait()
 
@@ -146,13 +147,14 @@ def do_kinematic_analyze(file_dir, filename):
     output_video = f"{file_dir}/inference_results/3d/{name}_kintematic.mp4"
     output_csv = f"{file_dir}/inference_results/3d/{name}_metrics.csv"
     print(input_json)
-    if os.path.exists(output_csv):
-        print(f"JSON file {output_csv} already exists. Skipping analysis.")
-        return
+    #if os.path.exists(output_csv):
+    #    print(f"JSON file {output_csv} already exists. Skipping analysis.")
+    #    return
     if not os.path.exists(input_video):
         print(f"Video file {input_video} does not exist. Skipping analysis.")
         return
     main(
+        write_video=False,
         json_path=input_json,
         video_path=input_video,
         out_video_path=output_video,
@@ -168,7 +170,7 @@ def do_kinematic_analyze(file_dir, filename):
     
 if __name__ == "__main__":
     do_for_each_video = True
-    results_dir = Path("/home/janek/psychologia/MIT_MOT_experiment/results_real/")
+    results_dir = Path("/media/janek/T7/results_real/")
     if do_for_each_video:
         # Iterate over all subdirectories starting with "experiment_"
         for experiment_path in results_dir.glob("experiment_*"):
@@ -176,16 +178,17 @@ if __name__ == "__main__":
                 print(f"Running model inference for: {experiment_path}")
                # model_inference3D(str(experiment_path))
                 for filename in glob.glob(str(experiment_path / "videos" / "*")):
-                    continue
+                    #continue
                    # get_metrics(experiment_path, Path(filename).stem)
-                #do_kinematic_analyze(experiment_path, Path(filename).stem)
+                    do_kinematic_analyze(experiment_path, Path(filename).stem)
                 sumamrize_results(experiment_path)
+            break
         
         # Run the process and wait for it to complete
-        process = subprocess.Popen("python3 postprocessing/analyze_csv.py", shell=True)
-        process.wait()
-        process = subprocess.Popen("python3 postprocessing/analyze_csv_v2.py", shell=True)
-        process.wait()
+      #  process = subprocess.Popen("python3 postprocessing/analyze_csv.py", shell=True)
+      ##  process.wait()
+      #  process = subprocess.Popen("python3 postprocessing/analyze_csv_v2.py", shell=True)
+      #  process.wait()
     else:
         experiment = "/home/janek/psychologia/MIT_MOT_experiment/results/experiment_2025-03-08-18-00-32_TEST/"
         experiment = "/home/janek/Downloads/k2/"

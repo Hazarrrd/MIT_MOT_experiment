@@ -11,9 +11,25 @@ LOAD_MAPPING = {
     "MID": ["MIT_2", "MOT_3"],
     "HIGH": ["MIT_3", "MOT_4"],
 }
-CONDITION_TO_LOAD = {
-    condition: load for load, conditions in LOAD_MAPPING.items() for condition in conditions
+LOAD_MAPPING_MIT_ONLY = {
+    "LOW": ["MIT_1"],
+    "MID": ["MIT_2"],
+    "HIGH": ["MIT_3"],
 }
+LOAD_MAPPING_MOT_ONLY = {
+    "LOW": ["MOT_2"],
+    "MID": ["MOT_3"],
+    "HIGH": ["MOT_4"],
+}
+
+
+def _build_condition_to_load(load_mapping: dict[str, list[str]]) -> dict[str, str]:
+    return {
+        condition: load for load, conditions in load_mapping.items() for condition in conditions
+    }
+
+
+CONDITION_TO_LOAD = _build_condition_to_load(LOAD_MAPPING)
 LOAD_ORDER_DEFAULT = list(LOAD_MAPPING.keys())
 TASK_ORDER_DEFAULT = ["MIT", "MOT"]
 LOAD_COLOR_MAP = {"LOW": "tab:green", "MID": "tab:orange", "HIGH": "tab:purple"}
@@ -598,6 +614,124 @@ def run_repeated_anova_for_csvs(csv_folder: str, summary_output: str):
             print(sig[cols_to_show])
         else:
             print("\nNo significant main or interaction effects (p < 0.05).")
+
+
+def run_load_only_anova_for_csvs(
+    csv_folder: str,
+    summary_output: str,
+    load_mappings: dict[str, dict[str, list[str]]] | None = None,
+):
+    """
+    Runs one-way repeated-measures ANOVA for Load within each specified mapping.
+    Default mappings cover MIT-only and MOT-only load groupings.
+    """
+    load_mappings = load_mappings or {
+        "MIT_only": LOAD_MAPPING_MIT_ONLY,
+        "MOT_only": LOAD_MAPPING_MOT_ONLY,
+    }
+    results = []
+    skipped = []
+
+    for fname in os.listdir(csv_folder):
+        if not fname.endswith(".csv"):
+            continue
+
+        fpath = os.path.join(csv_folder, fname)
+        metric = os.path.splitext(fname)[0]
+
+        try:
+            df = pd.read_csv(fpath)
+        except Exception as e:
+            reason = f"cannot read file: {e}"
+            print(f"⚠️ Skipped {fname} ({reason})")
+            skipped.append({"File": fname, "Reason": reason})
+            continue
+
+        if df.empty or "Experiment" not in df.columns:
+            reason = "empty or invalid format"
+            print(f"⚠️ Skipped {fname} ({reason})")
+            skipped.append({"File": fname, "Reason": reason})
+            continue
+
+        melted = df.melt(id_vars=["Experiment"], var_name="Condition", value_name="Value")
+        melted["Value"] = pd.to_numeric(melted["Value"], errors="coerce")
+        melted = melted.dropna(subset=["Experiment", "Condition", "Value"])
+
+        for label, mapping in load_mappings.items():
+            cond_to_load = _build_condition_to_load(mapping)
+            subset = melted[melted["Condition"].isin(cond_to_load)].copy()
+            subset["Load"] = subset["Condition"].map(cond_to_load)
+            subset = subset.dropna(subset=["Load", "Value"])
+
+            if subset["Load"].nunique() < 2:
+                reason = f"{label}: not enough load levels for ANOVA"
+                print(f"⚠️ Skipped {metric} ({reason})")
+                skipped.append({"File": fname, "Reason": reason})
+                continue
+
+            try:
+                aov = pg.rm_anova(
+                    dv="Value",
+                    within=["Load"],
+                    subject="Experiment",
+                    data=subset,
+                    detailed=True,
+                    effsize="np2",
+                )
+                aov["Metric"] = metric
+                aov["Comparison"] = label
+
+                if "p-GG-corr" in aov.columns:
+                    aov["p_value"] = aov["p-GG-corr"]
+                elif "p-unc" in aov.columns:
+                    aov["p_value"] = aov["p-unc"]
+                else:
+                    aov["p_value"] = 1.0
+
+                aov["Significant"] = aov["p_value"].apply(lambda p: "YES" if p < 0.05 else "NO")
+                results.append(aov)
+            except Exception as e:
+                reason = f"{label}: error during load-only ANOVA: {e}"
+                print(f"⚠️ Error running load-only ANOVA for {metric} ({label}): {e}")
+                skipped.append({"File": fname, "Reason": reason})
+
+    if results:
+        summary_df = pd.concat(results, ignore_index=True)
+        summary_df.to_csv(summary_output, index=False)
+        print(f"\n✅ Load-only ANOVA summary saved to {summary_output}")
+    else:
+        print("\n⚠️ No valid load-only ANOVA results computed (check input CSVs).")
+        summary_df = pd.DataFrame()
+
+    skipped_path = summary_output.replace(".csv", "_skipped.csv")
+    if skipped:
+        pd.DataFrame(skipped).to_csv(skipped_path, index=False)
+
+    processed_count = len(results)
+    skipped_count = len(skipped)
+
+    print(f"\nLoad-only summary:")
+    print(f"  • Processed files: {processed_count}")
+    print(f"  • Skipped files:   {skipped_count}")
+
+    if skipped_count > 0:
+        print(f"  • Skipped details saved to: {skipped_path}")
+        print("\n⚠️ Skipped files:")
+        for s in skipped:
+            print(f"    - {s['File']}: {s['Reason']}")
+
+    if not summary_df.empty and "Significant" in summary_df.columns:
+        sig = summary_df[summary_df["Significant"] == "YES"]
+        cols_to_show = [
+            c for c in ["Metric", "Comparison", "Source", "F", "p_value", "np2", "Significant"]
+            if c in summary_df.columns
+        ]
+
+        if not sig.empty:
+            print("\n🔥 Significant load-only effects found:")
+            print(sig[cols_to_show])
+        else:
+            print("\nNo significant load-only effects (p < 0.05).")
         
 if __name__ == "__main__":
     # Example usage
@@ -642,9 +776,14 @@ if __name__ == "__main__":
                 output_folder=variant_plots_dir,
                 label_suffix=label_suffix
             )
+            summary_output_path = f"/media/janek/T7/results_real/data/anova_summary{sufix}{variant_suffix}.csv"
             run_repeated_anova_for_csvs(
                 csv_folder=folder,
-                summary_output=f"/media/janek/T7/results_real/data/anova_summary{sufix}{variant_suffix}.csv"
+                summary_output=summary_output_path
+            )
+            run_load_only_anova_for_csvs(
+                csv_folder=folder,
+                summary_output=summary_output_path.replace(".csv", "_load_only.csv")
             )
 
     

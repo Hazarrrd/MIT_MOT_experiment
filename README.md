@@ -1,3 +1,9 @@
+INFERENCJA ODPALENIE:
+(bundesliga) janek@janek-ASUS-TUF-Dash-F15-FX516PM-FX516PM:~/psychologia$ cd mmpose/projects/rtmpose3d/
+(bundesliga) janek@janek-ASUS-TUF-Dash-F15-FX516PM-FX516PM:~/psychologia/mmpose/projects/rtmpose3d$ export PYTHONPATH=$(pwd):$PYTHONPATH
+(bundesliga) janek@janek-ASUS-TUF-Dash-F15-FX516PM-FX516PM:~/psychologia/mmpose/projects/rtmpose3d$ cd /home/janek/psychologia/MIT_MOT_experiment
+
+
 URUCHOMIENIE:
 W terminalu CMD wpisać kolejno komendy:
 cd  D:\Desktop\MIT_MOT_experiment

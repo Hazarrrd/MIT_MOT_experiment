@@ -13,6 +13,8 @@ CSV_PATH = "/media/janek/T7/results_real/all_trials_concat.csv"      # <- change
 EXCLUDE_TRAINING = True
 OUTPUT_DIR = Path("/media/janek/T7/results_real/analysis_outputs")
 OUTPUT_DIR.mkdir(exist_ok=True)
+OUTPUT_DIR_ELLIPSE = Path("/media/janek/T7/results_real/analysis_outputs/ellipses")
+OUTPUT_DIR_ELLIPSE.mkdir(exist_ok=True)
 
 KEY_METRICS = [
     "Age", "Task_time_guess", "Task_time_motoric", "Movement_start","Movement_duration", 
