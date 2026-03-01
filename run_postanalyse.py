@@ -174,7 +174,6 @@ if __name__ == "__main__":
     if do_for_each_video:
         # Iterate over all subdirectories starting with "experiment_"
         for experiment_path in results_dir.glob("experiment_*"):
-            break
             if experiment_path.is_dir():
                 print(f"Running model inference for: {experiment_path}")
                 old_anomalies = experiment_path / "anomalies.csv"

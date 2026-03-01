@@ -216,7 +216,7 @@ def confidence_ellipse_area_relative(
         center,
         cov_matrix,
         relative_points,
-        out_path=f"ellipses/ellipse_{metadata}_{outlier_info}_removed{removed}_area{int(area)}.png",
+        out_path=str(OUTPUT_DIR_ELLIPSE / f"ellipse_{metadata}_{outlier_info}_removed{removed}_area{int(area)}.png"),
     )
     return area
 

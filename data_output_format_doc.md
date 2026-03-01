@@ -18,7 +18,7 @@ Przed rozpoczęciem eksperymentu każdy uczestnik wypełnia formularz demografic
 - **Oprogramowanie:** PsychoPy (Python)
 - **Ekran:** monitor dotykowy, tryb pełnoekranowy
 - **Kamera internetowa:** 1280×720 px, 60 fps (MJPEG), uruchamiana automatycznie w trakcie zadania motorycznego — rejestruje obraz uczestnika w celu późniejszej estymacji pozy ciała (3D pose estimation, model RTMPose3D / RTMDet)
-- **Urządzenie wejściowe:** ekran dotykowy + dedykowany klawisz, na którym uczestnik trzyma palec wskazujący między zadaniami
+- **Urządzenie wejściowe:** ekran dotykowy + dedykowany klawisz, na którym uczestnik trzyma palec środkowy między zadaniami
 
 ### 4. Warunki eksperymentalne
 
@@ -47,53 +47,55 @@ Obciążenie poznawcze (Load) definiowane jest jako:
 
 ### 6. Przebieg pojedynczej próby
 
-Każda próba składa się z 5 faz:
+Każda próba rozpoczyna się od wciśnięcia przez uczestnika klawisza „X” na dedykowanej klawiaturze (przy użyciu palca środkowego prawej dłoni) i składa się z 8 następujących po sobie faz:
 
-#### Faza 1 — Obserwacja (1.5 s)
-Obiekty (cele oznaczone zielonymi obwódkami + dystraktory) są nieruchome. Uczestnik zapamiętuje, które obiekty są celami.
-- *W MIT:* obiekty mają unikalne kształty widoczne w tej fazie.
+###### Faza 1 — Obserwacja (1.5 s)
+Obiekty (cele oznaczone zielonymi obwódkami oraz dystraktory) są widoczne na ekranie i nieruchome. Zadaniem osoby badanej jest zapamiętanie, które obiekty są celami.
+*   *W warunku MIT:* obiekty posiadają unikalne kształty widoczne w tej fazie.
+*   *W warunku MOT:* wszystkie obiekty mają identyczny wygląd (czarne koła).
 
-#### Faza 2 — Śledzenie (6 s)
-Oznaczenia znikają. W MIT obiekty zostają zakryte identycznymi czarnymi kołami. Wszystkie obiekty poruszają się po złożonych trajektoriach:
-- Obiekty krążą parami wokół mniejszych kół satelitarnych (częstotliwość: **0.45 Hz**)
-- Koła satelitarne krążą wokół centralnego punktu (częstotliwość: **0.1 Hz**)
-- W losowym momencie (z przedziału 1 s – 6 s) każde koło satelitarne może odwrócić kierunek obrotu
-- Kierunki obrotu, offsety kątowe i orientacje par obiektów są randomizowane
+###### Faza 2 — Śledzenie (6 s)
+Oznaczenia celów (zielone obwódki) znikają. W warunku MIT unikalne kształty **pozostają widoczne** — obiekty poruszają się w swojej pełnej formie. W warunku MOT wszystkie obiekty wyglądają identycznie (czarne koła). Zadaniem uczestnika jest ciągłe śledzenie wzrokiem przemieszczających się celów. Wszystkie obiekty poruszają się po złożonych trajektoriach:
+*   Obiekty krążą parami wokół niewidocznych kół satelitarnych (częstotliwość: **0.45 Hz**).
+*   Koła satelitarne krążą wokół centralnego punktu (częstotliwość: **0.1 Hz**).
+*   W losowym momencie (z przedziału 1 s – 6 s) każde koło satelitarne może jednorazowo odwrócić kierunek obrotu.
+*   Kierunki obrotu, offsety kątowe i orientacje par obiektów są randomizowane.
 
-#### Faza 3 — Zadanie motoryczne
-Jeden losowo wybrany obiekt zostaje oznaczony niebieską obwódką (1.5 s). Potem obiekty znikają i pojawia się osobne czarne koło z białym krzyżykiem (+) poruszające się po okręgu (częstotliwość: **0.35 Hz**, promień: ~2× promień kół satelitarnych). Kierunek poruszania zmienia się losowo raz w trakcie próby.
+###### Faza 3 — Zakrycie i oznaczenie (1.5 s)
+Obiekty zatrzymują się. W warunku MIT następuje **zakrycie wszystkich obiektów identycznymi czarnymi kołami** (ukrycie tożsamości). Następnie jeden losowo wybrany element zostaje podświetlony niebieską obwódką. Zadaniem osoby badanej jest przypomnienie sobie — na podstawie wcześniejszego śledzenia — czy podświetlony obiekt był celem, czy dystraktorem.
 
-Uczestnik musi:
-1. Zwolnić trzymany klawisz (rejestracja **Movement_start**)
-2. Dotknąć ekranu w miejscu poruszającego się obiektu (rejestracja **ClickX, ClickY**)
+###### Faza 4 — Oczekiwanie (2.3 s)
+Wszystkie obiekty znikają, a na ekranie widoczne jest jedynie szare tło (w parametrach zdefiniowane jako opóźnienie `camera_pause`). Klawisz „X” musi pozostać wciśnięty – zbyt wczesne puszczenie przycisku w tej fazie powoduje, że zadanie motoryczne nie pojawia się na ekranie.
 
-Mierzone zmienne motoryczne:
-- Czas reakcji (`Movement_start`)
-- Czas trwania ruchu (`Movement_duration`)
-- Znormalizowany dystans euklidesowy (`Norm_Euc_Dist`)
-- Wektor prędkości obiektu w momencie kliknięcia (`Motoric_obj_Vx`, `Motoric_obj_Vy`, `V1_magnitude`)
-- Wektor kliknięcia (`V2_magnitude`)
-- Kąt między wektorami (`Angle_objV_click`)
+###### Faza 5 — Zadanie motoryczne (Limit czasu: 10 s)
+Na ekranie pojawia się docelowy obiekt motoryczny – osobne czarne koło z białym krzyżykiem (+), poruszające się po okręgu (częstotliwość: **0.35 Hz**, promień: ~2× promień kół satelitarnych). Kierunek ruchu obiektu zmienia się losowo raz w trakcie próby.
+Zadaniem uczestnika jest:
+1.  Zwolnić trzymany klawisz „X” palcem środkowym (rejestracja zmiennej **Movement_start**).
+2.  Wyciągnąć ramię i płynnym ruchem dotknąć ekranu w miejscu poruszającego się obiektu (rejestracja współrzędnych **ClickX, ClickY**).
+W momencie puszczenia klawisza, kamera automatycznie rozpoczyna nagrywanie ruchu na potrzeby estymacji pozy 3D.
+Mierzone są m.in. następujące zmienne:
+*   Czas reakcji przedmotorycznej (`Movement_start`)
+*   Czas trwania ruchu dłoni (`Movement_duration`)
+*   Znormalizowany dystans euklidesowy / błąd celowania (`Norm_Euc_Dist` / `TE`)
+*   Wektory i kąty uderzenia względem ruchu obiektu (`Motoric_obj_Vx`, `Motoric_obj_Vy`, `Angle_objV_click`)
 
-**Limit czasu:** 10 s. W trakcie tej fazy kamera nagrywa obraz uczestnika (od momentu puszczenia klawisza).
+###### Faza 6 — Kategoryzacja: Cel czy Dystraktor (Limit czasu: 4 s)
+Na ekranie pojawiają się dwa koła: zielone (reprezentujące cel) i czerwone (reprezentujące dystraktor). Ich pozycja (lewo/prawo) jest losowana. Uczestnik, poprzez dotknięcie odpowiedniego symbolu, kategoryzuje obiekt, który był oznaczony niebieską obwódką w Fazie 3.
+*   Rejestrowane zmienne: `Ground_truth_guess`, `Guess`, `Guess_success`, `Task_time_guess`.
 
-#### Faza 4 — Kategoryzacja: Cel czy Dystraktor
-Na ekranie pojawiają się dwa koła (zielone = cel, czerwone = dystraktor), których pozycja jest losowana (lewo/prawo). Uczestnik dotyka odpowiedniego koła.
-- **Limit czasu:** 4 s
-- Rejestrowane: `Ground_truth_guess`, `Guess`, `Guess_success`, `Task_time_guess`
+###### Faza 7 — Identyfikacja tożsamości (tylko MIT, Limit czasu: 8 s)
+Wszystkie unikalne kształty użyte w danej próbie zostają odkryte i rozmieszczone losowo na okręgu. U góry ekranu wyświetla się dodatkowo czarne koło reprezentujące „dystraktor”. Uczestnik ma za zadanie wskazać dokładną tożsamość ukrytą pod obiektem z Fazy 3:
+*   Poprawne wskazanie konkretnego kształtu (jeśli oznaczono cel) = sukces (`MIT_obj_identified = 1`).
+*   Poprawne wskazanie czarnego koła (jeśli oznaczono dystraktor) = sukces (`MIT_obj_identified = 2`).
+*   Wskazania błędne (np. zły kształt lub pomylenie celu z dystraktorem) są rejestrowane jako błędy (`MIT_obj_identified = 0, 3, 4, 5`).
 
-#### Faza 5 — Identyfikacja tożsamości (tylko MIT)
-Obiekty zostają odkryte (ponownie widoczne unikalne kształty) i rozmieszczone w okręgu. Uczestnik wskazuje, który konkretny kształt ukrywał się pod oznaczonym niebieską obwódką kołem:
-- Wybór poprawnego obiektu = sukces identyfikacji (`MIT_obj_identified = 1`)
-- Wybór czarnego koła na górze = "to był dystraktor" (`MIT_obj_identified = 2`)
-- Niepoprawny wybór = błąd (`MIT_obj_identified = 0`)
-- **Limit czasu:** 8 s
+###### Faza 8 — Informacja zwrotna
+Na ekranie wyświetlana jest informacja o poprawności wykonania zadań z faz kategoryzacji oraz identyfikacji. Naciśnięcie klawisza „X” pozwala pominąć ten komunikat, co płynnie inicjuje rozpoczęcie kolejnej próby eksperymentalnej.
 
 ### 7. Parametry ruchu obiektów
 
 | Parametr | Wartość |
 |---|---|
-| Rozdzielczość ekranu | 1280 × 1024 px |
 | FPS | 60 |
 | Promień głównego koła (`circle_radius`) | 286.72 px |
 | Promień kół satelitarnych (`small_circle_radius`) | 114.69 px |
@@ -125,9 +127,16 @@ Obiekty zostają odkryte (ponownie widoczne unikalne kształty) i rozmieszczone 
 
 Po zebraniu danych przeprowadzana jest automatyczna analiza obejmująca:
 1. **Estymacja pozy ciała 3D** (RTMPose3D + RTMDet) z nagrań kamer — ekstrakcja kątów łokciowych, ramiennych, metryk kinematycznych (PV, AV, MT, SaEn, PathLen itd.)
-2. **Detekcja anomalii:** zamrożone klatki (>5% bez ruchu), teleportacje (prędkość > median + 5×IQR, min. 50 cm/s), niestabilność długości kości (CV > 0.30)
-3. **Filtrowanie outlierów kliknięć:** dystans kliknięcia > 2×promień motoryczny lub > 3×SD
-4. **Analizy statystyczne:** ANOVA (repeated measures, Type × Load), t-testy, korelacje Spearmana, regresja logistyczna, korekta FDR (Benjamini-Hochberg), elipsy ufności dyspersji kliknięć
+2. **Filtracja sygnału kinematycznego:** Surowe trajektorie pozycji palca (X, Y) oraz kąty stawowe (shoulder elevation, elbow flexion) są wygładzane dolnoprzepustowym filtrem **Butterwortha 2. rzędu z zerowym przesunięciem fazowym** (`scipy.signal.filtfilt`, efektywny rząd = 4, częstotliwość odcięcia = **6 Hz**) przed jakimkolwiek różniczkowaniem numerycznym. Zastosowanie filtracji zero-fazowej eliminuje szum pomiarowy bez przesuwania fizjologicznych punktów zwrotnych w dziedzinie czasu, co jest szczególnie istotne dla rzetelnej estymacji prędkości szczytowej (PV) i czasu jej osiągnięcia (P2PV) (Crenna, Rossi i Berardengo, 2021).
+3. **Detekcja anomalii kinematycznych:** zamrożone klatki (>5% bez ruchu), teleportacje (prędkość > median + 5×IQR, min. 50 cm/s), niestabilność długości kości (CV > 0.30)
+4. **Wykluczenie prób behawioralnych:** Z analiz wykluczane są:
+   - Próby treningowe (`Is_training == 1`)
+   - Próby z anomaliami kinematycznymi (`is_anomaly == 1`)
+   - Próby z przekroczeniem limitu czasu w zadaniu kategoryzacji (`Guess_success == -1`)
+   - Próby z przekroczeniem limitu czasu lub brakiem ruchu w zadaniu motorycznym (`Movement_duration == -1`)
+   - Próby z przekroczeniem limitu czasu w zadaniu identyfikacji kształtu MIT (`MIT_obj_identified == -1`)
+5. **Filtrowanie outlierów kliknięć:** dystans kliknięcia > 2 × promień obiektu motorycznego (197 px). Zastosowano wyłącznie próg oparty na stałej fizycznej (2 × `motoric_radius`), rezygnując z filtracji statystycznej (3×SD), aby uniknąć systematycznego obcinania triali z warunków o wyższym obciążeniu poznawczym, w których większy rozrzut kliknięć może odzwierciedlać rzeczywisty efekt eksperymentalny.
+6. **Analizy statystyczne:** ANOVA (repeated measures, Type × Load), t-testy, korelacje Spearmana, regresja logistyczna, korekta FDR (Benjamini-Hochberg), elipsy ufności dyspersji kliknięć
 
 ---
 
@@ -290,3 +299,4 @@ Dla każdego warunku wyznaczamy elipsę obejmującą końcowe punkty dotknięcia
 - Wszystkie miary raportujemy **osobno dla każdego badanego** i **dla każdego warunku** (6 warunków: 3 × MOT, 3 × MIT).
 - Dla miar binarnych (sukces MOT/MIT) podajemy **% poprawnych odpowiedzi**.
 - Dla miar ciągłych raportujemy **średnią** i **odchylenie standardowe** (wariabilność) w obrębie warunku.
+
