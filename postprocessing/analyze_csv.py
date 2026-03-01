@@ -38,20 +38,17 @@ def analyze_single_experiment(csv_file_path):
     df_dropped_task_2 = df[df['MIT_obj_identified'] == -1]
     df = df[df['MIT_obj_identified'] != -1]
 
-    # Filter click-distance outliers
+    # Filter click-distance outliers (radius-based only)
     MOTORIC_RADIUS = 98.30400000000003
     if {'ClickX', 'ClickY', 'TargetX', 'TargetY'}.issubset(df.columns):
         click_xy = df[['ClickX', 'ClickY']].to_numpy(dtype=float)
         target_xy = df[['TargetX', 'TargetY']].to_numpy(dtype=float)
         click_dist = np.linalg.norm(click_xy - target_xy, axis=1)
         radius_outlier = click_dist > 2 * MOTORIC_RADIUS
-        dist_std = np.nanstd(click_dist)
-        std_outlier = click_dist > 3 * dist_std if dist_std > 0 else np.zeros(len(df), dtype=bool)
-        combined = radius_outlier | std_outlier
-        n_click_outliers = int(combined.sum())
+        n_click_outliers = int(radius_outlier.sum())
         if n_click_outliers > 0:
-            print(f"  ⚠️ Odfiltrowano {n_click_outliers} triali z outlierami kliknięć")
-        df = df[~combined]
+            print(f"  ⚠️ Odfiltrowano {n_click_outliers} triali z outlierami kliknięć (radius)")
+        df = df[~radius_outlier]
 
     def clean_mit_obj_identified(x):
         if x in [1, 2]:

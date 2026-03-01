@@ -14,6 +14,7 @@ Author: ChatGPT
 from dataclasses import dataclass
 from typing import Dict, Tuple, Optional, List, Iterable
 import numpy as np
+from scipy.signal import butter, filtfilt
 
 # =========================
 # General helpers
@@ -31,6 +32,13 @@ def moving_average(x: np.ndarray, w: int) -> np.ndarray:
     c[:w//2] = c[w//2]
     c[-w//2:] = c[-w//2-1]
     return c
+
+def butterworth_filter(x: np.ndarray, fs: float = 60.0, cutoff: float = 6.0, order: int = 2) -> np.ndarray:
+    nyq = fs / 2.0
+    if cutoff >= nyq or len(x) < 3 * (2 * order + 1):
+        return x
+    b, a = butter(order, cutoff / nyq, btype='low')
+    return filtfilt(b, a, x)
 
 def finite_diff(x: np.ndarray, t: np.ndarray) -> np.ndarray:
     """Central finite difference with edge-safe np.gradient."""

@@ -43,7 +43,8 @@ from kinematic_metrics import (
     D2T_metrics,
     shoulder_elevation_series, elbow_flexion_series, angle_velocity_metrics,
     time_lag_peak_velocity, cc_joint_angles, average_continuous_relative_phase,
-    time_normalized_metrics, time_normalize_angle_phase_samples, sample_entropy, norm_rows, detect_trial_anomalies
+    time_normalized_metrics, time_normalize_angle_phase_samples, sample_entropy, norm_rows, detect_trial_anomalies,
+    butterworth_filter
 )
 
 # ------------------------ I/O helpers ------------------------
@@ -208,6 +209,8 @@ def main(write_video=False,json_path=None, video_path=None, out_video_path=None,
 
     # --- Fingertip series and target ---
     ft_xy = fingertip_xy_series(kp, RIGHT["end_of_finger"])[:T]
+    ft_xy[:, 0] = butterworth_filter(ft_xy[:, 0], fs=fps)
+    ft_xy[:, 1] = butterworth_filter(ft_xy[:, 1], fs=fps)
     touch_xy = ft_xy[-1]
 
     trial = Trial2DSeries(
@@ -248,6 +251,8 @@ def main(write_video=False,json_path=None, video_path=None, out_video_path=None,
     )
     shoulder_deg, _ = shoulder_elevation_series(kps)
     elbow_deg, _ = elbow_flexion_series(kps)
+    shoulder_deg = butterworth_filter(shoulder_deg, fs=fps)
+    elbow_deg = butterworth_filter(elbow_deg, fs=fps)
 
     sh = angle_velocity_metrics(shoulder_deg, t, events)
     el = angle_velocity_metrics(elbow_deg, t, events)

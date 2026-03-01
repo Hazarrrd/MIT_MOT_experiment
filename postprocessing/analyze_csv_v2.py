@@ -322,26 +322,16 @@ if needed_cols.issubset(df.columns):
         df["anomaly_reasons"] = ""
     df["anomaly_reasons"] = df["anomaly_reasons"].fillna("").astype(str)
 
-    # Method 1: radius-based
+    # Method 1: radius-based (only)
     radius_outlier = click_dist > 2 * MOTORIC_RADIUS
 
-    # Method 2: std-based
-    dist_std = np.nanstd(click_dist)
-    std_outlier = click_dist > 3 * dist_std if dist_std > 0 else np.zeros(len(df), dtype=bool)
-
-    combined_outlier = radius_outlier | std_outlier
-    n_click_outliers = int(combined_outlier.sum())
+    n_click_outliers = int(radius_outlier.sum())
     if n_click_outliers > 0:
-        print(f"⚠️ Odfiltrowano {n_click_outliers} triali z outlierami kliknięć (radius/std)")
-        for idx in df.index[combined_outlier]:
-            reasons = []
-            if radius_outlier[df.index.get_loc(idx)]:
-                reasons.append(f"CLICK_RADIUS_OUTLIER(dist={click_dist[df.index.get_loc(idx)]:.1f}px)")
-            if std_outlier[df.index.get_loc(idx)]:
-                reasons.append(f"CLICK_STD_OUTLIER(dist={click_dist[df.index.get_loc(idx)]:.1f}px)")
+        print(f"⚠️ Odfiltrowano {n_click_outliers} triali z outlierami kliknięć (radius)")
+        for idx in df.index[radius_outlier]:
+            reason = f"CLICK_RADIUS_OUTLIER(dist={click_dist[df.index.get_loc(idx)]:.1f}px)"
             existing = df.at[idx, "anomaly_reasons"]
-            new_reason = "; ".join(reasons)
-            df.at[idx, "anomaly_reasons"] = f"{existing}; {new_reason}" if existing else new_reason
+            df.at[idx, "anomaly_reasons"] = f"{existing}; {reason}" if existing else reason
             df.at[idx, "is_anomaly"] = 1
 
     df = df[df["is_anomaly"] != 1]

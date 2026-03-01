@@ -89,13 +89,10 @@ def process_experiment_data(input_csv: str, output_excel: str, csv_output_folder
         target_xy = df[['TargetX', 'TargetY']].to_numpy(dtype=float)
         click_dist = np.linalg.norm(click_xy - target_xy, axis=1)
         radius_outlier = click_dist > 2 * MOTORIC_RADIUS
-        dist_std = np.nanstd(click_dist)
-        std_outlier = click_dist > 3 * dist_std if dist_std > 0 else np.zeros(len(df), dtype=bool)
-        combined = radius_outlier | std_outlier
-        n_click = int(combined.sum())
+        n_click = int(radius_outlier.sum())
         if n_click > 0:
-            print(f"  ⚠️ Odfiltrowano {n_click} triali z outlierami kliknięć")
-        df = df[~combined]
+            print(f"  ⚠️ Odfiltrowano {n_click} triali z outlierami kliknięć (radius)")
+        df = df[~radius_outlier]
     def Pol_to_numbers(x):
         if x in ["before"]:
             return 1
